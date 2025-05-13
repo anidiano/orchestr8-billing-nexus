@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,9 +10,103 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
+
+interface DashboardMetrics {
+  total_invocations_month: number;
+  success_rate: number;
+  active_orchestrations: number;
+  current_plan: string;
+  credits_used: number;
+  credits_allowed: number;
+}
 
 const Dashboard: React.FC = () => {
   const [timeRange, setTimeRange] = useState('month');
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  const fetchDashboardMetrics = async (): Promise<DashboardMetrics | null> => {
+    if (!user) return null;
+    
+    try {
+      const { data, error } = await supabase
+        .from('dashboard_metrics')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching metrics:', error);
+        toast({
+          title: "Error loading dashboard",
+          description: error.message,
+          variant: "destructive"
+        });
+        return null;
+      }
+      
+      console.log('Dashboard metrics:', data);
+      return data;
+    } catch (err) {
+      console.error('Error in fetchDashboardMetrics:', err);
+      return null;
+    }
+  };
+
+  const { data: metrics, isLoading, refetch } = useQuery({
+    queryKey: ['dashboardMetrics', user?.id],
+    queryFn: fetchDashboardMetrics,
+    enabled: !!user,
+  });
+
+  const handleRefresh = () => {
+    refetch();
+    toast({
+      title: "Dashboard refreshed",
+      description: "Latest data has been loaded.",
+    });
+  };
+  
+  // Fetch recent activity data
+  const fetchRecentActivity = async () => {
+    if (!user) return [];
+    
+    try {
+      // Fetch most recent invocations
+      const { data: invocationsData, error: invocationsError } = await supabase
+        .from('invocations')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+        
+      if (invocationsError) {
+        console.error('Error fetching recent invocations:', invocationsError);
+        return [];
+      }
+      
+      // Transform into activity items
+      return invocationsData.map(inv => ({
+        id: inv.id,
+        type: inv.status === 'success' ? 'usage' : 'alert',
+        description: `Orchestration ${inv.status}: ${inv.error_message || 'Completed successfully'}`,
+        timestamp: new Date(inv.created_at).toLocaleDateString(),
+      }));
+    } catch (err) {
+      console.error('Error in fetchRecentActivity:', err);
+      return [];
+    }
+  };
+
+  const { data: activityData } = useQuery({
+    queryKey: ['recentActivity', user?.id],
+    queryFn: fetchRecentActivity,
+    enabled: !!user,
+  });
   
   return (
     <div className="min-h-screen bg-background">
@@ -21,7 +115,7 @@ const Dashboard: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back! Here's your AI operations at a glance.</p>
+            <p className="text-muted-foreground">Welcome back{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ''}! Here's your AI operations at a glance.</p>
           </div>
           <div className="mt-4 md:mt-0 flex flex-wrap gap-3">
             <Select value={timeRange} onValueChange={setTimeRange}>
@@ -36,11 +130,23 @@ const Dashboard: React.FC = () => {
                 <SelectItem value="quarter">Last Quarter</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="icon" className="w-10 h-10">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="w-10 h-10"
+              onClick={handleRefresh}
+              disabled={isLoading}
+            >
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="flex items-center justify-center h-full w-full">⟳</span>
+                    <span className="flex items-center justify-center h-full w-full">
+                      {isLoading ? (
+                        <span className="animate-spin">⟳</span>
+                      ) : (
+                        '⟳'
+                      )}
+                    </span>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Refresh data</p>
@@ -52,7 +158,15 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="mb-8">
-          <MetricsCards />
+          <MetricsCards 
+            metrics={{
+              monthlyRevenue: metrics?.credits_used ? `$${(metrics.credits_used * 0.01).toFixed(2)}` : "$0.00",
+              apiCalls: metrics?.total_invocations_month?.toLocaleString() || "0",
+              tokenUsage: metrics?.credits_used ? `${metrics.credits_used.toLocaleString()}` : "0",
+              activeCustomers: metrics?.active_orchestrations?.toString() || "0",
+              successRate: metrics?.success_rate ? `${metrics.success_rate}%` : "0%"
+            }}
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
@@ -72,7 +186,7 @@ const Dashboard: React.FC = () => {
               <CardDescription>Latest events from your account</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <RecentActivity />
+              <RecentActivity activityItems={activityData || []} />
             </CardContent>
           </Card>
         </div>
@@ -130,28 +244,30 @@ const Dashboard: React.FC = () => {
                 <CardTitle>Cost Summary</CardTitle>
                 <CardDescription>Current billing period</CardDescription>
               </div>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => window.location.href = '/billing'}>
                 View Details
               </Button>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {[
-                  { name: "GPT Models", amount: 12450.00 },
-                  { name: "Claude Models", amount: 8230.00 },
-                  { name: "Vector Databases", amount: 3120.00 },
-                  { name: "Image Generation", amount: 782.00 }
+                  { name: "GPT Models", amount: metrics?.credits_used ? (metrics.credits_used * 0.006) : 0 },
+                  { name: "Claude Models", amount: metrics?.credits_used ? (metrics.credits_used * 0.004) : 0 },
+                  { name: "Vector Databases", amount: metrics?.credits_used ? (metrics.credits_used * 0.0015) : 0 },
+                  { name: "Image Generation", amount: metrics?.credits_used ? (metrics.credits_used * 0.00075) : 0 }
                 ].map((item, index) => (
                   <div key={index} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md transition-colors">
                     <span className="text-sm font-medium">{item.name}</span>
-                    <span className="font-medium">${item.amount.toLocaleString()}</span>
+                    <span className="font-medium">${item.amount.toFixed(2)}</span>
                   </div>
                 ))}
                 
                 <div className="pt-4 mt-2 border-t">
                   <div className="flex items-center justify-between">
                     <span className="font-semibold">Total</span>
-                    <span className="font-semibold text-lg">${(12450 + 8230 + 3120 + 782).toLocaleString()}</span>
+                    <span className="font-semibold text-lg">
+                      ${metrics?.credits_used ? ((metrics.credits_used * 0.01).toFixed(2)) : '0.00'}
+                    </span>
                   </div>
                 </div>
               </div>

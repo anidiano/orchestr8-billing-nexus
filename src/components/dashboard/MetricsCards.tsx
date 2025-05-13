@@ -1,7 +1,17 @@
 
 import React from 'react';
-import { ArrowDown, ArrowUp, Database, DollarSign } from 'lucide-react';
+import { ArrowDown, ArrowUp, Database, DollarSign, Users } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
+
+interface MetricsCardsProps {
+  metrics: {
+    monthlyRevenue: string;
+    apiCalls: string;
+    tokenUsage: string;
+    activeCustomers: string;
+    successRate: string;
+  };
+}
 
 interface MetricCardProps {
   title: string;
@@ -41,12 +51,12 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, description, tren
   );
 };
 
-const MetricsCards: React.FC = () => {
+const MetricsCards: React.FC<MetricsCardsProps> = ({ metrics }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
       <MetricCard 
         title="Monthly Revenue" 
-        value="$24,582" 
+        value={metrics.monthlyRevenue} 
         description="vs previous month" 
         trend={{
           value: "12%",
@@ -56,7 +66,7 @@ const MetricsCards: React.FC = () => {
       />
       <MetricCard 
         title="API Calls" 
-        value="1.2M" 
+        value={metrics.apiCalls} 
         description="vs previous month" 
         trend={{
           value: "8%",
@@ -66,7 +76,7 @@ const MetricsCards: React.FC = () => {
       />
       <MetricCard 
         title="Token Usage" 
-        value="8.5M" 
+        value={metrics.tokenUsage} 
         description="vs previous month" 
         trend={{
           value: "3%",
@@ -75,14 +85,14 @@ const MetricsCards: React.FC = () => {
         icon={<Database className="h-5 w-5 text-orchestr8-500" />}
       />
       <MetricCard 
-        title="Active Customers" 
-        value="342" 
+        title="Success Rate" 
+        value={metrics.successRate} 
         description="vs previous month" 
         trend={{
           value: "5%",
           positive: true
         }}
-        icon={<Database className="h-5 w-5 text-orchestr8-500" />}
+        icon={<Users className="h-5 w-5 text-orchestr8-500" />}
       />
     </div>
   );

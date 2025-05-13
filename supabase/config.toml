@@ -1,1 +1,5 @@
+
 project_id = "xgkswiffobmohovulcdm"
+
+[functions.dashboard-data]
+verify_jwt = true

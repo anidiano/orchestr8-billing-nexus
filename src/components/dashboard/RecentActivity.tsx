@@ -9,7 +9,37 @@ interface ActivityItem {
   timestamp: string;
 }
 
-const activityItems: ActivityItem[] = [
+interface RecentActivityProps {
+  activityItems?: ActivityItem[];
+}
+
+const ActivityIcon: React.FC<{ type: ActivityItem['type'] }> = ({ type }) => {
+  switch (type) {
+    case 'invoice':
+      return <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+        <svg className="h-4 w-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      </div>;
+    case 'usage':
+      return <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+        <svg className="h-4 w-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+        </svg>
+      </div>;
+    case 'alert':
+      return <div className="h-8 w-8 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center">
+        <svg className="h-4 w-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>;
+    default:
+      return null;
+  }
+};
+
+// Default activity items for when real data is not available
+const defaultActivityItems: ActivityItem[] = [
   {
     id: '1',
     type: 'invoice',
@@ -42,32 +72,10 @@ const activityItems: ActivityItem[] = [
   },
 ];
 
-const ActivityIcon: React.FC<{ type: ActivityItem['type'] }> = ({ type }) => {
-  switch (type) {
-    case 'invoice':
-      return <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-        <svg className="h-4 w-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-        </svg>
-      </div>;
-    case 'usage':
-      return <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-        <svg className="h-4 w-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-        </svg>
-      </div>;
-    case 'alert':
-      return <div className="h-8 w-8 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center">
-        <svg className="h-4 w-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-      </div>;
-    default:
-      return null;
-  }
-};
-
-const RecentActivity: React.FC = () => {
+const RecentActivity: React.FC<RecentActivityProps> = ({ activityItems = defaultActivityItems }) => {
+  // Use provided items or fall back to defaults if empty
+  const items = activityItems.length > 0 ? activityItems : defaultActivityItems;
+  
   return (
     <Card>
       <CardHeader>
@@ -76,7 +84,7 @@ const RecentActivity: React.FC = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-5">
-          {activityItems.map((item) => (
+          {items.map((item) => (
             <div key={item.id} className="flex items-start">
               <ActivityIcon type={item.type} />
               <div className="ml-4 space-y-1">
