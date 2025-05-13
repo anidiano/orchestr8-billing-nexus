@@ -90,6 +90,69 @@ const UsageChart: React.FC = () => {
               <TabsTrigger value="tokens">Token Usage</TabsTrigger>
               <TabsTrigger value="cost">Cost Analysis</TabsTrigger>
             </TabsList>
+          
+            <div className="pt-4">
+              <TabsContent value="tokens" className="m-0">
+                <div className="h-[350px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 10 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis 
+                        dataKey="name" 
+                        tick={{ fill: '#6b7280', fontSize: 12 }}
+                        axisLine={{ stroke: '#e5e7eb' }}
+                      />
+                      <YAxis 
+                        tick={{ fill: '#6b7280', fontSize: 12 }}
+                        tickFormatter={(value) => value >= 1000 ? `${value / 1000}K` : value}
+                        axisLine={{ stroke: '#e5e7eb' }}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend formatter={(value) => value === 'tokens' ? 'Token Usage' : value} />
+                      <Bar 
+                        dataKey="tokens" 
+                        name="tokens"
+                        fill="#0ca5e9" 
+                        radius={[4, 4, 0, 0]} 
+                        animationDuration={1000}
+                        animationEasing="ease-out"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </TabsContent>
+              <TabsContent value="cost" className="m-0">
+                <div className="h-[350px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 10 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis 
+                        dataKey="name" 
+                        tick={{ fill: '#6b7280', fontSize: 12 }}
+                        axisLine={{ stroke: '#e5e7eb' }}
+                      />
+                      <YAxis 
+                        tick={{ fill: '#6b7280', fontSize: 12 }}
+                        tickFormatter={(value) => `$${value >= 1000 ? value / 1000 + 'K' : value}`}
+                        axisLine={{ stroke: '#e5e7eb' }}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend formatter={(value) => value === 'cost' ? 'Cost Analysis' : value} />
+                      <Line 
+                        type="monotone" 
+                        dataKey="cost" 
+                        name="cost"
+                        stroke="#0284c7" 
+                        strokeWidth={3}
+                        dot={{ r: 4, strokeWidth: 2 }}
+                        activeDot={{ r: 7, stroke: '#0284c7', strokeWidth: 2 }}
+                        animationDuration={1000}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </TabsContent>
+            </div>
           </Tabs>
           <Button variant="ghost" size="icon" onClick={handleExport}>
             <Download className="h-4 w-4" />
@@ -97,66 +160,7 @@ const UsageChart: React.FC = () => {
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <TabsContent value="tokens" className="m-0">
-          <div className="h-[350px] pt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis 
-                  dataKey="name" 
-                  tick={{ fill: '#6b7280', fontSize: 12 }}
-                  axisLine={{ stroke: '#e5e7eb' }}
-                />
-                <YAxis 
-                  tick={{ fill: '#6b7280', fontSize: 12 }}
-                  tickFormatter={(value) => value >= 1000 ? `${value / 1000}K` : value}
-                  axisLine={{ stroke: '#e5e7eb' }}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend formatter={(value) => value === 'tokens' ? 'Token Usage' : value} />
-                <Bar 
-                  dataKey="tokens" 
-                  name="tokens"
-                  fill="#0ca5e9" 
-                  radius={[4, 4, 0, 0]} 
-                  animationDuration={1000}
-                  animationEasing="ease-out"
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </TabsContent>
-        <TabsContent value="cost" className="m-0">
-          <div className="h-[350px] pt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis 
-                  dataKey="name" 
-                  tick={{ fill: '#6b7280', fontSize: 12 }}
-                  axisLine={{ stroke: '#e5e7eb' }}
-                />
-                <YAxis 
-                  tick={{ fill: '#6b7280', fontSize: 12 }}
-                  tickFormatter={(value) => `$${value >= 1000 ? value / 1000 + 'K' : value}`}
-                  axisLine={{ stroke: '#e5e7eb' }}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend formatter={(value) => value === 'cost' ? 'Cost Analysis' : value} />
-                <Line 
-                  type="monotone" 
-                  dataKey="cost" 
-                  name="cost"
-                  stroke="#0284c7" 
-                  strokeWidth={3}
-                  dot={{ r: 4, strokeWidth: 2 }}
-                  activeDot={{ r: 7, stroke: '#0284c7', strokeWidth: 2 }}
-                  animationDuration={1000}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </TabsContent>
+        {/* The CardContent is now empty as the content is moved inside the Tabs component */}
       </CardContent>
     </Card>
   );
