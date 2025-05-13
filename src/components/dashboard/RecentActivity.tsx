@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface ActivityItem {
+export interface ActivityItem {
   id: string;
   type: 'invoice' | 'usage' | 'alert';
   description: string;
@@ -77,25 +77,17 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ activityItems = default
   const items = activityItems.length > 0 ? activityItems : defaultActivityItems;
   
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recent Activity</CardTitle>
-        <CardDescription>Latest events and notifications</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-5">
-          {items.map((item) => (
-            <div key={item.id} className="flex items-start">
-              <ActivityIcon type={item.type} />
-              <div className="ml-4 space-y-1">
-                <p className="text-sm font-medium leading-none">{item.description}</p>
-                <p className="text-sm text-muted-foreground">{item.timestamp}</p>
-              </div>
-            </div>
-          ))}
+    <div className="space-y-5">
+      {items.map((item) => (
+        <div key={item.id} className="flex items-start">
+          <ActivityIcon type={item.type} />
+          <div className="ml-4 space-y-1">
+            <p className="text-sm font-medium leading-none">{item.description}</p>
+            <p className="text-sm text-muted-foreground">{item.timestamp}</p>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      ))}
+    </div>
   );
 };
 

@@ -6,7 +6,7 @@ import { CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface BillingPlansProps {
-  currentPlan: 'free' | 'starter' | 'professional' | 'enterprise';
+  currentPlan: 'free' | 'starter' | 'pro' | 'enterprise';
 }
 
 export function BillingPlans({ currentPlan }: BillingPlansProps) {
@@ -38,7 +38,7 @@ export function BillingPlans({ currentPlan }: BillingPlansProps) {
     },
     {
       name: 'Professional',
-      id: 'professional',
+      id: 'pro',
       price: '$499',
       description: 'For growing businesses',
       features: [

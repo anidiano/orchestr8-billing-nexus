@@ -1,11 +1,10 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MetricsCards from '@/components/dashboard/MetricsCards';
 import UsageChart from '@/components/dashboard/UsageChart';
-import RecentActivity from '@/components/dashboard/RecentActivity';
+import RecentActivity, { ActivityItem } from '@/components/dashboard/RecentActivity';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -72,7 +71,7 @@ const Dashboard: React.FC = () => {
   };
   
   // Fetch recent activity data
-  const fetchRecentActivity = async () => {
+  const fetchRecentActivity = async (): Promise<ActivityItem[]> => {
     if (!user) return [];
     
     try {
@@ -95,7 +94,7 @@ const Dashboard: React.FC = () => {
         type: inv.status === 'success' ? 'usage' : 'alert',
         description: `Orchestration ${inv.status}: ${inv.error_message || 'Completed successfully'}`,
         timestamp: new Date(inv.created_at).toLocaleDateString(),
-      }));
+      })) as ActivityItem[];
     } catch (err) {
       console.error('Error in fetchRecentActivity:', err);
       return [];
