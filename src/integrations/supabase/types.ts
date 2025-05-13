@@ -9,16 +9,280 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      billing: {
+        Row: {
+          billing_cycle_end: string
+          billing_cycle_start: string
+          created_at: string
+          credits_allowed: number
+          credits_used: number
+          current_plan: Database["public"]["Enums"]["billing_plan_type"]
+          id: string
+          payment_status: Database["public"]["Enums"]["payment_status_type"]
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billing_cycle_end?: string
+          billing_cycle_start?: string
+          created_at?: string
+          credits_allowed?: number
+          credits_used?: number
+          current_plan?: Database["public"]["Enums"]["billing_plan_type"]
+          id?: string
+          payment_status?: Database["public"]["Enums"]["payment_status_type"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billing_cycle_end?: string
+          billing_cycle_start?: string
+          created_at?: string
+          credits_allowed?: number
+          credits_used?: number
+          current_plan?: Database["public"]["Enums"]["billing_plan_type"]
+          id?: string
+          payment_status?: Database["public"]["Enums"]["payment_status_type"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "dashboard_metrics"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      invocations: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          input_data: Json | null
+          orchestration_id: string
+          output_data: Json | null
+          status: Database["public"]["Enums"]["invocation_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          input_data?: Json | null
+          orchestration_id: string
+          output_data?: Json | null
+          status?: Database["public"]["Enums"]["invocation_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          input_data?: Json | null
+          orchestration_id?: string
+          output_data?: Json | null
+          status?: Database["public"]["Enums"]["invocation_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invocations_orchestration_id_fkey"
+            columns: ["orchestration_id"]
+            isOneToOne: false
+            referencedRelation: "orchestrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invocations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "dashboard_metrics"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      orchestrations: {
+        Row: {
+          config: Json | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          status: Database["public"]["Enums"]["orchestration_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          status?: Database["public"]["Enums"]["orchestration_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          status?: Database["public"]["Enums"]["orchestration_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orchestrations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "dashboard_metrics"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id: string
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "dashboard_metrics"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      usage_logs: {
+        Row: {
+          calls_per_hour: number
+          failed_calls: number
+          id: string
+          model: string | null
+          successful_calls: number
+          timestamp: string
+          tokens_input: number
+          tokens_output: number
+          user_id: string
+        }
+        Insert: {
+          calls_per_hour?: number
+          failed_calls?: number
+          id?: string
+          model?: string | null
+          successful_calls?: number
+          timestamp?: string
+          tokens_input?: number
+          tokens_output?: number
+          user_id: string
+        }
+        Update: {
+          calls_per_hour?: number
+          failed_calls?: number
+          id?: string
+          model?: string | null
+          successful_calls?: number
+          timestamp?: string
+          tokens_input?: number
+          tokens_output?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "dashboard_metrics"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      dashboard_metrics: {
+        Row: {
+          active_orchestrations: number | null
+          credits_allowed: number | null
+          credits_used: number | null
+          current_plan: Database["public"]["Enums"]["billing_plan_type"] | null
+          success_rate: number | null
+          total_invocations_month: number | null
+          user_id: string | null
+        }
+        Insert: {
+          active_orchestrations?: never
+          credits_allowed?: never
+          credits_used?: never
+          current_plan?: never
+          success_rate?: never
+          total_invocations_month?: never
+          user_id?: string | null
+        }
+        Update: {
+          active_orchestrations?: never
+          credits_allowed?: never
+          credits_used?: never
+          current_plan?: never
+          success_rate?: never
+          total_invocations_month?: never
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      increment_usage: {
+        Args: {
+          p_user_id: string
+          p_success?: boolean
+          p_tokens_input?: number
+          p_tokens_output?: number
+          p_model?: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      billing_plan_type: "free" | "starter" | "pro" | "enterprise"
+      invocation_status: "success" | "failed" | "in_progress" | "timeout"
+      orchestration_status: "active" | "paused" | "failed" | "archived"
+      payment_status_type: "paid" | "pending" | "failed" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +397,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      billing_plan_type: ["free", "starter", "pro", "enterprise"],
+      invocation_status: ["success", "failed", "in_progress", "timeout"],
+      orchestration_status: ["active", "paused", "failed", "archived"],
+      payment_status_type: ["paid", "pending", "failed", "cancelled"],
+    },
   },
 } as const

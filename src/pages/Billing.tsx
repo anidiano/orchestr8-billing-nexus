@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,15 +10,58 @@ import { PaymentMethod } from "@/components/billing/PaymentMethod";
 import { Badge } from "@/components/ui/badge";
 import { CreditCard, FileText, Package } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 
 const Billing: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("plans");
+  const [billingData, setBillingData] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const { toast } = useToast();
   
   // Billing period calculation
   const startDate = new Date(new Date().setDate(1)); // First day of current month
   const endDate = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0); // Last day of current month
   const today = new Date();
   const progress = Math.floor((today.getDate() / endDate.getDate()) * 100);
+
+  useEffect(() => {
+    async function fetchBillingData() {
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        
+        if (session?.session) {
+          // Get billing data for the current user
+          const { data, error } = await supabase
+            .from('billing')
+            .select('*')
+            .eq('user_id', session.session.user.id)
+            .single();
+            
+          if (error) {
+            console.error('Error fetching billing data:', error);
+            toast({
+              title: "Error fetching billing data",
+              description: error.message,
+              variant: "destructive",
+            });
+          } else {
+            setBillingData(data);
+          }
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error:', error);
+        setLoading(false);
+      }
+    }
+    
+    fetchBillingData();
+  }, [toast]);
+
+  // Get the current plan from billing data or default to 'free'
+  const currentPlan = billingData?.current_plan || 'free';
 
   return (
     <div className="min-h-screen bg-background">
@@ -30,10 +73,12 @@ const Billing: React.FC = () => {
             <p className="text-muted-foreground">Manage your subscription, payment methods, and billing history</p>
           </div>
           <div className="mt-4 md:mt-0 flex items-center gap-3">
-            <Badge variant="outline" className="bg-orchestr8-50 text-orchestr8-700 border-orchestr8-200 py-1.5 px-3">
-              <Package className="h-4 w-4 mr-1.5" />
-              Current plan: Enterprise
-            </Badge>
+            {!loading && (
+              <Badge variant="outline" className="bg-orchestr8-50 text-orchestr8-700 border-orchestr8-200 py-1.5 px-3">
+                <Package className="h-4 w-4 mr-1.5" />
+                Current plan: {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}
+              </Badge>
+            )}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -69,11 +114,15 @@ const Billing: React.FC = () => {
             <div className="flex justify-between">
               <div>
                 <div className="text-sm text-muted-foreground">Current usage</div>
-                <div className="text-lg font-semibold">$16,387.50</div>
+                <div className="text-lg font-semibold">
+                  {loading ? "Loading..." : `$${((billingData?.credits_used || 0) * 0.01).toLocaleString()}`}
+                </div>
               </div>
               <div className="text-right">
                 <div className="text-sm text-muted-foreground">Projected total</div>
-                <div className="text-lg font-semibold">$24,582.00</div>
+                <div className="text-lg font-semibold">
+                  {loading ? "Loading..." : `$${((billingData?.credits_used || 0) * 0.01 * (100 / (progress || 1))).toFixed(2).toLocaleString()}`}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -96,7 +145,7 @@ const Billing: React.FC = () => {
           </TabsList>
           
           <TabsContent value="plans" className="space-y-4">
-            <BillingPlans currentPlan="enterprise" />
+            <BillingPlans currentPlan={currentPlan} />
           </TabsContent>
           
           <TabsContent value="invoices">
