@@ -8,7 +8,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUp, ArrowDown, Info } from "lucide-react";
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
 
 interface ModelUsageTableProps {
   dateRange: { from: Date; to: Date };
@@ -59,22 +65,92 @@ const modelUsageData = [
 
 export function ModelUsageTable({ dateRange }: ModelUsageTableProps) {
   return (
-    <div className="rounded-md border">
+    <div className="overflow-x-auto">
       <Table>
-        <TableHeader>
+        <TableHeader className="bg-muted/50">
           <TableRow>
-            <TableHead>Model</TableHead>
-            <TableHead>Provider</TableHead>
-            <TableHead className="text-right">Tokens</TableHead>
-            <TableHead className="text-right">API Calls</TableHead>
-            <TableHead className="text-right">Cost</TableHead>
-            <TableHead className="text-right">Avg Cost/Call</TableHead>
-            <TableHead className="text-right">Trend</TableHead>
+            <TableHead className="font-medium">Model</TableHead>
+            <TableHead className="font-medium">Provider</TableHead>
+            <TableHead className="text-right font-medium">
+              <div className="flex items-center justify-end gap-1">
+                Tokens
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Total number of tokens processed</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </TableHead>
+            <TableHead className="text-right font-medium">
+              <div className="flex items-center justify-end gap-1">
+                API Calls
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Number of requests made to the API</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </TableHead>
+            <TableHead className="text-right font-medium">
+              <div className="flex items-center justify-end gap-1">
+                Cost
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Total cost for the selected period</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </TableHead>
+            <TableHead className="text-right font-medium">
+              <div className="flex items-center justify-end gap-1">
+                Avg Cost/Call
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Average cost per API call</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </TableHead>
+            <TableHead className="text-right font-medium">
+              <div className="flex items-center justify-end gap-1">
+                Trend
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Usage trend compared to previous period</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {modelUsageData.map((row) => (
-            <TableRow key={row.id}>
+            <TableRow key={row.id} className="hover:bg-muted/30 transition-colors">
               <TableCell className="font-medium">{row.model}</TableCell>
               <TableCell>{row.provider}</TableCell>
               <TableCell className="text-right">{row.tokens.toLocaleString()}</TableCell>
@@ -87,11 +163,27 @@ export function ModelUsageTable({ dateRange }: ModelUsageTableProps) {
                     <ArrowUp className="h-4 w-4 mr-1" /> : 
                     <ArrowDown className="h-4 w-4 mr-1" />
                   }
-                  {Math.abs(row.trend).toFixed(1)}%
+                  <span className="font-medium">{Math.abs(row.trend).toFixed(1)}%</span>
                 </div>
               </TableCell>
             </TableRow>
           ))}
+          <TableRow className="bg-muted/20">
+            <TableCell colSpan={2} className="font-semibold">Total</TableCell>
+            <TableCell className="text-right font-semibold">
+              {modelUsageData.reduce((acc, row) => acc + row.tokens, 0).toLocaleString()}
+            </TableCell>
+            <TableCell className="text-right font-semibold">
+              {modelUsageData.reduce((acc, row) => acc + row.calls, 0).toLocaleString()}
+            </TableCell>
+            <TableCell className="text-right font-semibold">
+              ${modelUsageData.reduce((acc, row) => acc + row.cost, 0).toLocaleString()}
+            </TableCell>
+            <TableCell className="text-right font-semibold">
+              ${(modelUsageData.reduce((acc, row) => acc + (row.cost / row.calls), 0) / modelUsageData.length).toFixed(3)}
+            </TableCell>
+            <TableCell></TableCell>
+          </TableRow>
         </TableBody>
       </Table>
     </div>

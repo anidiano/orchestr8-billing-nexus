@@ -1,10 +1,11 @@
 
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface UsageOverTimeChartProps {
   dateRange: { from: Date; to: Date };
   modelFilter: string;
+  chartType?: string;
 }
 
 // Sample data
@@ -18,72 +19,200 @@ const data = [
   { name: 'Jun 12', gpt4: 600000, claude: 420000, gpt35: 180000, llama: 220000 },
 ];
 
-export function UsageOverTimeChart({ dateRange, modelFilter }: UsageOverTimeChartProps) {
+export function UsageOverTimeChart({ dateRange, modelFilter, chartType = "line" }: UsageOverTimeChartProps) {
+  const chartColors = {
+    gpt4: "#0ca5e9",
+    claude: "#0284c7",
+    gpt35: "#7cd4fd",
+    llama: "#36bffa"
+  };
+
+  const modelNames = {
+    gpt4: "GPT-4-Turbo",
+    claude: "Claude 3 Opus",
+    gpt35: "GPT-3.5-Turbo",
+    llama: "Llama 3"
+  };
+
+  const renderActiveShape = (props: any) => {
+    // Additional custom rendering for active elements can be added here
+    return <g>{props.children}</g>;
+  };
+
+  const shouldRenderModel = (modelKey: string) => {
+    if (modelFilter === 'all') return true;
+    
+    const filterMap: {[key: string]: string} = {
+      'gpt-4': 'gpt4',
+      'claude-3': 'claude',
+      'gpt-3.5': 'gpt35',
+      'llama-3': 'llama'
+    };
+    
+    return modelKey === filterMap[modelFilter];
+  };
+
   return (
     <div className="h-[350px] w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={data}
-          margin={{
-            top: 5,
-            right: 30,
-            left: 20,
-            bottom: 5,
-          }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip 
-            formatter={(value: number) => [value.toLocaleString(), 'Tokens']}
-            contentStyle={{
-              backgroundColor: 'rgba(255, 255, 255, 0.8)',
-              borderRadius: '6px',
-              border: '1px solid #ccc',
+        {chartType === "line" ? (
+          <LineChart
+            data={data}
+            margin={{
+              top: 20,
+              right: 30,
+              left: 20,
+              bottom: 10,
             }}
-          />
-          <Legend />
-          {(modelFilter === 'all' || modelFilter === 'gpt-4') && (
-            <Line 
-              type="monotone" 
-              dataKey="gpt4" 
-              name="GPT-4-Turbo" 
-              stroke="#0ca5e9" 
-              activeDot={{ r: 8 }} 
-              strokeWidth={2} 
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis 
+              dataKey="name" 
+              tick={{ fill: '#6b7280', fontSize: 12 }}
+              axisLine={{ stroke: '#e5e7eb' }}
+              tickLine={{ stroke: '#e5e7eb' }}
             />
-          )}
-          {(modelFilter === 'all' || modelFilter === 'claude-3') && (
-            <Line 
-              type="monotone" 
-              dataKey="claude" 
-              name="Claude 3 Opus" 
-              stroke="#0284c7" 
-              activeDot={{ r: 8 }} 
-              strokeWidth={2} 
+            <YAxis 
+              tick={{ fill: '#6b7280', fontSize: 12 }}
+              axisLine={{ stroke: '#e5e7eb' }}
+              tickLine={{ stroke: '#e5e7eb' }}
+              tickFormatter={(value) => value >= 1000000 ? `${value / 1000000}M` : `${value / 1000}K`}
             />
-          )}
-          {(modelFilter === 'all' || modelFilter === 'gpt-3.5') && (
-            <Line 
-              type="monotone" 
-              dataKey="gpt35" 
-              name="GPT-3.5-Turbo" 
-              stroke="#7cd4fd" 
-              activeDot={{ r: 8 }} 
-              strokeWidth={2} 
+            <Tooltip 
+              formatter={(value: number) => [value.toLocaleString(), 'Tokens']}
+              contentStyle={{
+                backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                borderRadius: '6px',
+                padding: '10px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                border: '1px solid #e5e7eb',
+              }}
+              cursor={{ stroke: '#9ca3af', strokeWidth: 1, strokeDasharray: '5 5' }}
             />
-          )}
-          {(modelFilter === 'all' || modelFilter === 'llama-3') && (
-            <Line 
-              type="monotone" 
-              dataKey="llama" 
-              name="Llama 3" 
-              stroke="#36bffa" 
-              activeDot={{ r: 8 }} 
-              strokeWidth={2} 
+            <Legend 
+              wrapperStyle={{ paddingTop: 10 }}
+              formatter={(value) => <span style={{ color: '#374151', fontSize: 12 }}>{value}</span>}
             />
-          )}
-        </LineChart>
+            {shouldRenderModel('gpt4') && (
+              <Line 
+                type="monotone" 
+                dataKey="gpt4" 
+                name={modelNames.gpt4}
+                stroke={chartColors.gpt4} 
+                strokeWidth={3}
+                dot={{ r: 4, strokeWidth: 2 }}
+                activeDot={{ r: 7, stroke: chartColors.gpt4, strokeWidth: 2 }}
+              />
+            )}
+            {shouldRenderModel('claude') && (
+              <Line 
+                type="monotone" 
+                dataKey="claude" 
+                name={modelNames.claude}
+                stroke={chartColors.claude} 
+                strokeWidth={3}
+                dot={{ r: 4, strokeWidth: 2 }}
+                activeDot={{ r: 7, stroke: chartColors.claude, strokeWidth: 2 }}
+              />
+            )}
+            {shouldRenderModel('gpt35') && (
+              <Line 
+                type="monotone" 
+                dataKey="gpt35" 
+                name={modelNames.gpt35}
+                stroke={chartColors.gpt35} 
+                strokeWidth={3}
+                dot={{ r: 4, strokeWidth: 2 }}
+                activeDot={{ r: 7, stroke: chartColors.gpt35, strokeWidth: 2 }}
+              />
+            )}
+            {shouldRenderModel('llama') && (
+              <Line 
+                type="monotone" 
+                dataKey="llama" 
+                name={modelNames.llama}
+                stroke={chartColors.llama} 
+                strokeWidth={3}
+                dot={{ r: 4, strokeWidth: 2 }}
+                activeDot={{ r: 7, stroke: chartColors.llama, strokeWidth: 2 }}
+              />
+            )}
+          </LineChart>
+        ) : (
+          <BarChart
+            data={data}
+            margin={{
+              top: 20,
+              right: 30,
+              left: 20,
+              bottom: 10,
+            }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis 
+              dataKey="name" 
+              tick={{ fill: '#6b7280', fontSize: 12 }}
+              axisLine={{ stroke: '#e5e7eb' }}
+              tickLine={{ stroke: '#e5e7eb' }}
+            />
+            <YAxis 
+              tick={{ fill: '#6b7280', fontSize: 12 }}
+              axisLine={{ stroke: '#e5e7eb' }}
+              tickLine={{ stroke: '#e5e7eb' }}
+              tickFormatter={(value) => value >= 1000000 ? `${value / 1000000}M` : `${value / 1000}K`}
+            />
+            <Tooltip 
+              formatter={(value: number) => [value.toLocaleString(), 'Tokens']}
+              contentStyle={{
+                backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                borderRadius: '6px',
+                padding: '10px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                border: '1px solid #e5e7eb',
+              }}
+            />
+            <Legend 
+              wrapperStyle={{ paddingTop: 10 }}
+              formatter={(value) => <span style={{ color: '#374151', fontSize: 12 }}>{value}</span>}
+            />
+            {shouldRenderModel('gpt4') && (
+              <Bar 
+                dataKey="gpt4" 
+                name={modelNames.gpt4}
+                fill={chartColors.gpt4} 
+                radius={[4, 4, 0, 0]}
+                activeBar={renderActiveShape}
+              />
+            )}
+            {shouldRenderModel('claude') && (
+              <Bar 
+                dataKey="claude" 
+                name={modelNames.claude}
+                fill={chartColors.claude} 
+                radius={[4, 4, 0, 0]}
+                activeBar={renderActiveShape}
+              />
+            )}
+            {shouldRenderModel('gpt35') && (
+              <Bar 
+                dataKey="gpt35" 
+                name={modelNames.gpt35}
+                fill={chartColors.gpt35} 
+                radius={[4, 4, 0, 0]}
+                activeBar={renderActiveShape}
+              />
+            )}
+            {shouldRenderModel('llama') && (
+              <Bar 
+                dataKey="llama" 
+                name={modelNames.llama}
+                fill={chartColors.llama} 
+                radius={[4, 4, 0, 0]}
+                activeBar={renderActiveShape}
+              />
+            )}
+          </BarChart>
+        )}
       </ResponsiveContainer>
     </div>
   );
