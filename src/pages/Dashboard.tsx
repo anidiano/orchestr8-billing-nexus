@@ -45,14 +45,37 @@ const Dashboard: React.FC = () => {
           description: error.message,
           variant: "destructive"
         });
-        return null;
+        
+        // Return default values instead of null to prevent UI crashes
+        return {
+          total_invocations_month: 0,
+          success_rate: 0,
+          active_orchestrations: 0,
+          current_plan: 'free',
+          credits_used: 0,
+          credits_allowed: 1000
+        };
       }
       
       console.log('Dashboard metrics:', data);
       return data;
     } catch (err) {
       console.error('Error in fetchDashboardMetrics:', err);
-      return null;
+      toast({
+        title: "Error loading dashboard",
+        description: "Unable to fetch dashboard data. Please try again.",
+        variant: "destructive"
+      });
+      
+      // Return default values instead of null
+      return {
+        total_invocations_month: 0,
+        success_rate: 0,
+        active_orchestrations: 0,
+        current_plan: 'free',
+        credits_used: 0,
+        credits_allowed: 1000
+      };
     }
   };
 
@@ -88,13 +111,13 @@ const Dashboard: React.FC = () => {
         return [];
       }
       
-      // Transform into activity items
-      return invocationsData.map(inv => ({
+      // Transform into activity items with proper type checking
+      return (invocationsData || []).map(inv => ({
         id: inv.id,
-        type: inv.status === 'success' ? 'usage' : 'alert',
+        type: (inv.status === 'success' ? 'usage' : 'alert') as 'usage' | 'alert',
         description: `Orchestration ${inv.status}: ${inv.error_message || 'Completed successfully'}`,
         timestamp: new Date(inv.created_at).toLocaleDateString(),
-      })) as ActivityItem[];
+      }));
     } catch (err) {
       console.error('Error in fetchRecentActivity:', err);
       return [];
@@ -106,6 +129,16 @@ const Dashboard: React.FC = () => {
     queryFn: fetchRecentActivity,
     enabled: !!user,
   });
+  
+  // Ensure metrics has default values
+  const safeMetrics = metrics || {
+    total_invocations_month: 0,
+    success_rate: 0,
+    active_orchestrations: 0,
+    current_plan: 'free',
+    credits_used: 0,
+    credits_allowed: 1000
+  };
   
   return (
     <div className="min-h-screen bg-background">
@@ -159,11 +192,11 @@ const Dashboard: React.FC = () => {
         <div className="mb-8">
           <MetricsCards 
             metrics={{
-              monthlyRevenue: metrics?.credits_used ? `$${(metrics.credits_used * 0.01).toFixed(2)}` : "$0.00",
-              apiCalls: metrics?.total_invocations_month?.toLocaleString() || "0",
-              tokenUsage: metrics?.credits_used ? `${metrics.credits_used.toLocaleString()}` : "0",
-              activeCustomers: metrics?.active_orchestrations?.toString() || "0",
-              successRate: metrics?.success_rate ? `${metrics.success_rate}%` : "0%"
+              monthlyRevenue: `$${(safeMetrics.credits_used * 0.01).toFixed(2)}`,
+              apiCalls: safeMetrics.total_invocations_month.toLocaleString(),
+              tokenUsage: safeMetrics.credits_used.toLocaleString(),
+              activeCustomers: safeMetrics.active_orchestrations.toString(),
+              successRate: `${safeMetrics.success_rate}%`
             }}
           />
         </div>
@@ -250,10 +283,10 @@ const Dashboard: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 {[
-                  { name: "GPT Models", amount: metrics?.credits_used ? (metrics.credits_used * 0.006) : 0 },
-                  { name: "Claude Models", amount: metrics?.credits_used ? (metrics.credits_used * 0.004) : 0 },
-                  { name: "Vector Databases", amount: metrics?.credits_used ? (metrics.credits_used * 0.0015) : 0 },
-                  { name: "Image Generation", amount: metrics?.credits_used ? (metrics.credits_used * 0.00075) : 0 }
+                  { name: "GPT Models", amount: safeMetrics.credits_used * 0.006 },
+                  { name: "Claude Models", amount: safeMetrics.credits_used * 0.004 },
+                  { name: "Vector Databases", amount: safeMetrics.credits_used * 0.0015 },
+                  { name: "Image Generation", amount: safeMetrics.credits_used * 0.00075 }
                 ].map((item, index) => (
                   <div key={index} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md transition-colors">
                     <span className="text-sm font-medium">{item.name}</span>
@@ -265,7 +298,7 @@ const Dashboard: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <span className="font-semibold">Total</span>
                     <span className="font-semibold text-lg">
-                      ${metrics?.credits_used ? ((metrics.credits_used * 0.01).toFixed(2)) : '0.00'}
+                      ${(safeMetrics.credits_used * 0.01).toFixed(2)}
                     </span>
                   </div>
                 </div>
