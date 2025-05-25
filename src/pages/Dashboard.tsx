@@ -93,15 +93,15 @@ const Dashboard: React.FC = () => {
     });
   };
   
-  // Fetch recent activity data
+  // Fetch recent activity data with simplified query
   const fetchRecentActivity = async (): Promise<ActivityItem[]> => {
     if (!user) return [];
     
     try {
-      // Fetch most recent invocations
+      // Simplified query to avoid potential policy recursion
       const { data: invocationsData, error: invocationsError } = await supabase
         .from('invocations')
-        .select('*')
+        .select('id, status, error_message, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(5);
@@ -111,7 +111,7 @@ const Dashboard: React.FC = () => {
         return [];
       }
       
-      // Transform into activity items with proper type checking
+      // Transform into activity items
       return (invocationsData || []).map(inv => ({
         id: inv.id,
         type: (inv.status === 'success' ? 'usage' : 'alert') as 'usage' | 'alert',
