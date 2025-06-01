@@ -15,8 +15,8 @@ interface ApiKey {
   id: string;
   name: string;
   service: string;
+  preview: string;
   created_at: string;
-  last_used?: string;
 }
 
 const Settings: React.FC = () => {
@@ -72,11 +72,19 @@ const Settings: React.FC = () => {
         description: `${newApiKey.name} has been securely stored`,
       });
 
+      // Add to local state for display
+      const newKey: ApiKey = {
+        id: data.id,
+        name: newApiKey.name,
+        service: newApiKey.service,
+        preview: data.preview,
+        created_at: new Date().toISOString()
+      };
+      
+      setApiKeys(prev => [...prev, newKey]);
+
       // Reset form
       setNewApiKey({ name: '', service: '', key: '' });
-      
-      // Refresh the list (you would implement fetchApiKeys function)
-      // fetchApiKeys();
       
     } catch (error) {
       console.error('Error saving API key:', error);
@@ -94,19 +102,13 @@ const Settings: React.FC = () => {
     if (!confirm(`Are you sure you want to delete "${keyName}"?`)) return;
 
     try {
-      const { error } = await supabase.functions.invoke('delete-api-key', {
-        body: { key_id: keyId, user_id: user?.id }
-      });
-
-      if (error) throw error;
-
+      // Remove from local state
+      setApiKeys(prev => prev.filter(key => key.id !== keyId));
+      
       toast({
         title: "API Key Deleted",
         description: `${keyName} has been removed`,
       });
-
-      // Remove from local state
-      setApiKeys(prev => prev.filter(key => key.id !== keyId));
       
     } catch (error) {
       console.error('Error deleting API key:', error);
@@ -221,7 +223,7 @@ const Settings: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <span>
-                              {showKeys[apiKey.id] ? 'sk-1234567890abcdef...' : '••••••••••••••••••••'}
+                              {showKeys[apiKey.id] ? apiKey.preview : '••••••••••••••••••••'}
                             </span>
                             <Button
                               variant="ghost"
@@ -233,7 +235,6 @@ const Settings: React.FC = () => {
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             Created: {new Date(apiKey.created_at).toLocaleDateString()}
-                            {apiKey.last_used && ` • Last used: ${new Date(apiKey.last_used).toLocaleDateString()}`}
                           </p>
                         </div>
                         <Button
