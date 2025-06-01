@@ -9,7 +9,7 @@ export const useRealtimeMetrics = () => {
   const queryClient = useQueryClient();
 
   const invalidateQueries = useCallback(() => {
-    // Invalidate dashboard metrics query
+    // Invalidate dashboard metrics query (this will refresh the view data)
     queryClient.invalidateQueries({
       queryKey: ['dashboardMetrics', user?.id]
     });
@@ -20,7 +20,7 @@ export const useRealtimeMetrics = () => {
     });
   }, [queryClient, user?.id]);
 
-  // Listen to invocations changes
+  // Listen to invocations changes (this will trigger dashboard_metrics view updates)
   const { isListening: invocationsListening } = useRealtimeData({
     table: 'invocations',
     onUpdate: invalidateQueries
