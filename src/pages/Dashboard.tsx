@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,6 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MetricsCards from '@/components/dashboard/MetricsCards';
 import UsageChart from '@/components/dashboard/UsageChart';
 import RecentActivity, { ActivityItem } from '@/components/dashboard/RecentActivity';
+import RealtimeIndicator from '@/components/dashboard/RealtimeIndicator';
+import TestRealtimeButton from '@/components/dashboard/TestRealtimeButton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
+import { useRealtimeMetrics } from '@/hooks/useRealtimeMetrics';
 
 interface DashboardMetrics {
   total_invocations_month: number;
@@ -27,6 +31,9 @@ const Dashboard: React.FC = () => {
   const [timeRange, setTimeRange] = useState('month');
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Enable realtime updates for dashboard
+  const { isListening } = useRealtimeMetrics();
   
   const fetchDashboardMetrics = async (): Promise<DashboardMetrics | null> => {
     if (!user) return null;
@@ -83,6 +90,7 @@ const Dashboard: React.FC = () => {
     queryKey: ['dashboardMetrics', user?.id],
     queryFn: fetchDashboardMetrics,
     enabled: !!user,
+    refetchInterval: isListening ? false : 30000, // Only poll if not realtime
   });
 
   const handleRefresh = () => {
@@ -93,7 +101,6 @@ const Dashboard: React.FC = () => {
     });
   };
   
-  // Fetch recent activity data with simplified query
   const fetchRecentActivity = async (): Promise<ActivityItem[]> => {
     if (!user) return [];
     
@@ -128,6 +135,7 @@ const Dashboard: React.FC = () => {
     queryKey: ['recentActivity', user?.id],
     queryFn: fetchRecentActivity,
     enabled: !!user,
+    refetchInterval: isListening ? false : 30000, // Only poll if not realtime
   });
   
   // Ensure metrics has default values
@@ -146,7 +154,11 @@ const Dashboard: React.FC = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+              <RealtimeIndicator isListening={isListening} />
+              <TestRealtimeButton />
+            </div>
             <p className="text-muted-foreground">Welcome back{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ''}! Here's your AI operations at a glance.</p>
           </div>
           <div className="mt-4 md:mt-0 flex flex-wrap gap-3">
