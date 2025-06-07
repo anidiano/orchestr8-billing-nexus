@@ -41,17 +41,17 @@ export const useRealtimeData = ({ table, event = '*', onUpdate }: UseRealtimeDat
             });
           }
           
-          if (table === 'invocations' && payload.eventType === 'UPDATE' && payload.new.status === 'success') {
+          if (table === 'invocations' && payload.eventType === 'UPDATE' && payload.new?.status === 'success') {
             toast({
               title: "Orchestration completed",
               description: "Your orchestration finished successfully.",
             });
           }
           
-          if (table === 'invocations' && payload.eventType === 'UPDATE' && payload.new.status === 'failed') {
+          if (table === 'invocations' && payload.eventType === 'UPDATE' && payload.new?.status === 'failed') {
             toast({
               title: "Orchestration failed",
-              description: payload.new.error_message || "Your orchestration encountered an error.",
+              description: payload.new?.error_message || "Your orchestration encountered an error.",
               variant: "destructive"
             });
           }
