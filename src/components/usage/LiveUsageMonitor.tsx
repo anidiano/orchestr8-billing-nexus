@@ -22,6 +22,13 @@ interface RealtimeUsageData {
   chartData: LiveMetric[];
 }
 
+interface UsageLogPayload {
+  calls_per_hour?: number;
+  tokens_input?: number;
+  tokens_output?: number;
+  successful_calls?: number;
+}
+
 const LiveUsageMonitor: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -74,43 +81,46 @@ const LiveUsageMonitor: React.FC = () => {
         (payload) => {
           console.log('Live usage update:', payload);
           
+          const newData = payload.new as UsageLogPayload;
+          
           // Update live metrics
           setUsageData(prev => {
-            const newData = [...prev.chartData];
+            const chartData = [...prev.chartData];
             const now = new Date();
             const currentTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
             
             // Add new data point
-            newData.push({
+            chartData.push({
               timestamp: currentTime,
-              calls: payload.new?.calls_per_hour || Math.floor(Math.random() * 20) + 5,
-              tokens: payload.new?.tokens_input + payload.new?.tokens_output || Math.floor(Math.random() * 1000) + 100,
-              success_rate: payload.new?.successful_calls ? 
-                Math.round((payload.new.successful_calls / payload.new.calls_per_hour) * 100) : 
+              calls: newData?.calls_per_hour || Math.floor(Math.random() * 20) + 5,
+              tokens: (newData?.tokens_input || 0) + (newData?.tokens_output || 0) || Math.floor(Math.random() * 1000) + 100,
+              success_rate: newData?.successful_calls && newData?.calls_per_hour ? 
+                Math.round((newData.successful_calls / newData.calls_per_hour) * 100) : 
                 Math.floor(Math.random() * 10) + 90
             });
             
             // Keep only last 12 data points
-            if (newData.length > 12) {
-              newData.shift();
+            if (chartData.length > 12) {
+              chartData.shift();
             }
             
             return {
               ...prev,
-              totalCalls: prev.totalCalls + (payload.new?.calls_per_hour || 1),
-              tokensThisHour: payload.new?.tokens_input + payload.new?.tokens_output || prev.tokensThisHour + 100,
-              currentSuccessRate: payload.new?.successful_calls ? 
-                Math.round((payload.new.successful_calls / payload.new.calls_per_hour) * 100) : 
+              totalCalls: prev.totalCalls + (newData?.calls_per_hour || 1),
+              tokensThisHour: (newData?.tokens_input || 0) + (newData?.tokens_output || 0) || prev.tokensThisHour + 100,
+              currentSuccessRate: newData?.successful_calls && newData?.calls_per_hour ? 
+                Math.round((newData.successful_calls / newData.calls_per_hour) * 100) : 
                 prev.currentSuccessRate,
-              chartData: newData
+              chartData
             };
           });
           
           // Show toast notification for new usage
           if (payload.eventType === 'INSERT') {
+            const totalTokens = (newData?.tokens_input || 0) + (newData?.tokens_output || 0);
             toast({
               title: "New API Usage",
-              description: `API call recorded with ${payload.new?.tokens_input + payload.new?.tokens_output || 0} tokens`,
+              description: `API call recorded with ${totalTokens} tokens`,
             });
           }
         }

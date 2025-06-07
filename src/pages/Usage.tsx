@@ -12,10 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Download, BarChart3, LineChart, Activity } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { DateRange } from 'react-day-picker';
 
 const Usage: React.FC = () => {
   const { toast } = useToast();
-  const [dateRange, setDateRange] = useState({
+  const [dateRange, setDateRange] = useState<DateRange>({
     from: new Date(2024, 4, 1),
     to: new Date()
   });
@@ -75,8 +76,8 @@ const Usage: React.FC = () => {
           <TabsContent value="overview" className="space-y-6">
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
               <DateRangePicker 
-                dateRange={dateRange} 
-                onDateRangeChange={setDateRange} 
+                date={dateRange} 
+                setDate={setDateRange} 
               />
               <div className="flex gap-2">
                 <Select value={modelFilter} onValueChange={setModelFilter}>
@@ -127,7 +128,7 @@ const Usage: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ModelUsageTable modelFilter={modelFilter} dateRange={dateRange} />
+                <ModelUsageTable dateRange={dateRange} />
               </CardContent>
             </Card>
           </TabsContent>
