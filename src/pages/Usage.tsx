@@ -37,6 +37,14 @@ const Usage: React.FC = () => {
     }, 1500);
   };
 
+  // Ensure dateRange always has both from and to for components that require it
+  const getValidDateRange = (): { from: Date; to: Date } => {
+    return {
+      from: dateRange.from || new Date(2024, 4, 1),
+      to: dateRange.to || new Date()
+    };
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -113,7 +121,7 @@ const Usage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <UsageOverTimeChart 
-                  dateRange={dateRange} 
+                  dateRange={getValidDateRange()} 
                   modelFilter={modelFilter}
                   chartType={chartType}
                 />
@@ -128,7 +136,7 @@ const Usage: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ModelUsageTable dateRange={dateRange} />
+                <ModelUsageTable dateRange={getValidDateRange()} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -144,7 +152,7 @@ const Usage: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <UsageOverTimeChart 
-                    dateRange={dateRange} 
+                    dateRange={getValidDateRange()} 
                     modelFilter={modelFilter}
                     chartType="line"
                   />
