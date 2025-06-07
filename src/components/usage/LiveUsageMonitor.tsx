@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
@@ -6,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useRealtimeData } from '@/hooks/useRealtimeData';
+import { useQuery } from '@tanstack/react-query';
 
 interface LiveMetric {
   timestamp: string;
@@ -22,13 +25,6 @@ interface RealtimeUsageData {
   chartData: LiveMetric[];
 }
 
-interface UsageLogPayload {
-  calls_per_hour?: number;
-  tokens_input?: number;
-  tokens_output?: number;
-  successful_calls?: number;
-}
-
 const LiveUsageMonitor: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -39,99 +35,127 @@ const LiveUsageMonitor: React.FC = () => {
     averageResponseTime: 245,
     chartData: []
   });
-  const [isConnected, setIsConnected] = useState(false);
 
-  // Generate initial chart data
-  useEffect(() => {
-    const now = new Date();
-    const initialData: LiveMetric[] = [];
-    
-    for (let i = 11; i >= 0; i--) {
-      const time = new Date(now.getTime() - (i * 5 * 60 * 1000)); // 5-minute intervals
-      initialData.push({
-        timestamp: time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-        calls: Math.floor(Math.random() * 20) + 5,
-        tokens: Math.floor(Math.random() * 1000) + 100,
-        success_rate: Math.floor(Math.random() * 10) + 90
+  // Fetch real usage data from Supabase
+  const fetchUsageData = async () => {
+    if (!user) return null;
+
+    try {
+      // Get usage logs from the last 12 hours
+      const now = new Date();
+      const twelveHoursAgo = new Date(now.getTime() - (12 * 60 * 60 * 1000));
+      
+      const { data: usageLogs, error } = await supabase
+        .from('usage_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('timestamp', twelveHoursAgo.toISOString())
+        .order('timestamp', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching usage data:', error);
+        return null;
+      }
+
+      // Transform data for charts
+      const chartData: LiveMetric[] = [];
+      let totalCalls = 0;
+      let totalTokens = 0;
+      let totalSuccessful = 0;
+      let totalFailed = 0;
+
+      // Group by hour and create chart data
+      const hourlyData = new Map();
+      
+      usageLogs?.forEach(log => {
+        const hour = new Date(log.timestamp).toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+        
+        if (!hourlyData.has(hour)) {
+          hourlyData.set(hour, {
+            calls: 0,
+            tokens: 0,
+            successful: 0,
+            failed: 0
+          });
+        }
+        
+        const existing = hourlyData.get(hour);
+        existing.calls += log.calls_per_hour || 0;
+        existing.tokens += (log.tokens_input || 0) + (log.tokens_output || 0);
+        existing.successful += log.successful_calls || 0;
+        existing.failed += log.failed_calls || 0;
+        
+        totalCalls += log.calls_per_hour || 0;
+        totalTokens += (log.tokens_input || 0) + (log.tokens_output || 0);
+        totalSuccessful += log.successful_calls || 0;
+        totalFailed += log.failed_calls || 0;
       });
+
+      // Convert to chart format
+      hourlyData.forEach((data, hour) => {
+        chartData.push({
+          timestamp: hour,
+          calls: data.calls,
+          tokens: data.tokens,
+          success_rate: data.calls > 0 ? Math.round((data.successful / data.calls) * 100) : 100
+        });
+      });
+
+      // Fill in missing hours with zero data if needed
+      while (chartData.length < 12) {
+        const time = new Date(now.getTime() - ((12 - chartData.length) * 60 * 60 * 1000));
+        chartData.unshift({
+          timestamp: time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          calls: 0,
+          tokens: 0,
+          success_rate: 100
+        });
+      }
+
+      const currentSuccessRate = totalCalls > 0 ? Math.round((totalSuccessful / totalCalls) * 100) : 100;
+
+      return {
+        totalCalls,
+        tokensThisHour: totalTokens,
+        currentSuccessRate,
+        averageResponseTime: 245, // This would need to be tracked separately
+        chartData: chartData.slice(-12) // Keep only last 12 data points
+      };
+    } catch (error) {
+      console.error('Error in fetchUsageData:', error);
+      return null;
     }
-    
-    setUsageData(prev => ({
-      ...prev,
-      chartData: initialData
-    }));
-  }, []);
+  };
+
+  const { data: realUsageData, refetch } = useQuery({
+    queryKey: ['liveUsageData', user?.id],
+    queryFn: fetchUsageData,
+    enabled: !!user,
+    refetchInterval: 60000, // Refetch every minute
+  });
 
   // Set up realtime listening for usage updates
+  const { isListening } = useRealtimeData({
+    table: 'usage_logs',
+    onUpdate: () => {
+      console.log('Usage data updated, refetching...');
+      refetch();
+      toast({
+        title: "Live Update",
+        description: "Usage data updated in real-time",
+      });
+    }
+  });
+
+  // Update local state when real data changes
   useEffect(() => {
-    if (!user) return;
-
-    setIsConnected(true);
-    
-    const channel = supabase
-      .channel('live-usage-monitor')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'usage_logs',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Live usage update:', payload);
-          
-          const newData = payload.new as UsageLogPayload;
-          
-          // Update live metrics
-          setUsageData(prev => {
-            const chartData = [...prev.chartData];
-            const now = new Date();
-            const currentTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-            
-            // Add new data point
-            chartData.push({
-              timestamp: currentTime,
-              calls: newData?.calls_per_hour || Math.floor(Math.random() * 20) + 5,
-              tokens: (newData?.tokens_input || 0) + (newData?.tokens_output || 0) || Math.floor(Math.random() * 1000) + 100,
-              success_rate: newData?.successful_calls && newData?.calls_per_hour ? 
-                Math.round((newData.successful_calls / newData.calls_per_hour) * 100) : 
-                Math.floor(Math.random() * 10) + 90
-            });
-            
-            // Keep only last 12 data points
-            if (chartData.length > 12) {
-              chartData.shift();
-            }
-            
-            return {
-              ...prev,
-              totalCalls: prev.totalCalls + (newData?.calls_per_hour || 1),
-              tokensThisHour: (newData?.tokens_input || 0) + (newData?.tokens_output || 0) || prev.tokensThisHour + 100,
-              currentSuccessRate: newData?.successful_calls && newData?.calls_per_hour ? 
-                Math.round((newData.successful_calls / newData.calls_per_hour) * 100) : 
-                prev.currentSuccessRate,
-              chartData
-            };
-          });
-          
-          // Show toast notification for new usage
-          if (payload.eventType === 'INSERT') {
-            const totalTokens = (newData?.tokens_input || 0) + (newData?.tokens_output || 0);
-            toast({
-              title: "New API Usage",
-              description: `API call recorded with ${totalTokens} tokens`,
-            });
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      setIsConnected(false);
-      supabase.removeChannel(channel);
-    };
-  }, [user, toast]);
+    if (realUsageData) {
+      setUsageData(realUsageData);
+    }
+  }, [realUsageData]);
 
   const MetricCard = ({ title, value, icon, change }: { 
     title: string; 
@@ -167,9 +191,9 @@ const LiveUsageMonitor: React.FC = () => {
           <h2 className="text-2xl font-bold tracking-tight">Live Usage Monitor</h2>
           <p className="text-muted-foreground">Real-time API usage and performance metrics</p>
         </div>
-        <Badge variant={isConnected ? "default" : "secondary"} className={isConnected ? "bg-green-500" : ""}>
-          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-white animate-pulse' : 'bg-gray-300'} mr-2`} />
-          {isConnected ? 'Live' : 'Offline'}
+        <Badge variant={isListening ? "default" : "secondary"} className={isListening ? "bg-green-500" : ""}>
+          <div className={`w-2 h-2 rounded-full ${isListening ? 'bg-white animate-pulse' : 'bg-gray-300'} mr-2`} />
+          {isListening ? 'Live' : 'Offline'}
         </Badge>
       </div>
 
@@ -182,10 +206,10 @@ const LiveUsageMonitor: React.FC = () => {
           change="+12% from yesterday"
         />
         <MetricCard 
-          title="Tokens This Hour" 
+          title="Tokens This Period" 
           value={usageData.tokensThisHour.toLocaleString()} 
           icon={<Zap className="h-5 w-5 text-yellow-500" />}
-          change="+8% from last hour"
+          change="+8% from last period"
         />
         <MetricCard 
           title="Success Rate" 
@@ -206,7 +230,7 @@ const LiveUsageMonitor: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle>API Calls (Live)</CardTitle>
-            <CardDescription>Real-time API call volume over the last hour</CardDescription>
+            <CardDescription>Real-time API call volume from your usage logs</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
@@ -243,7 +267,7 @@ const LiveUsageMonitor: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle>Token Usage (Live)</CardTitle>
-            <CardDescription>Real-time token consumption tracking</CardDescription>
+            <CardDescription>Real-time token consumption from usage logs</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">

@@ -16,7 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
-import { useRealtimeMetrics } from '@/hooks/useRealtimeMetrics';
+import { useRealtimeData } from '@/hooks/useRealtimeData';
 
 interface DashboardMetrics {
   total_invocations_month: number;
@@ -31,9 +31,6 @@ const Dashboard: React.FC = () => {
   const [timeRange, setTimeRange] = useState('month');
   const { user } = useAuth();
   const { toast } = useToast();
-  
-  // Enable realtime updates for dashboard
-  const { isListening } = useRealtimeMetrics();
   
   const fetchDashboardMetrics = async (): Promise<DashboardMetrics | null> => {
     if (!user) return null;
@@ -53,7 +50,6 @@ const Dashboard: React.FC = () => {
           variant: "destructive"
         });
         
-        // Return default values instead of null to prevent UI crashes
         return {
           total_invocations_month: 0,
           success_rate: 0,
@@ -74,7 +70,6 @@ const Dashboard: React.FC = () => {
         variant: "destructive"
       });
       
-      // Return default values instead of null
       return {
         total_invocations_month: 0,
         success_rate: 0,
@@ -90,8 +85,35 @@ const Dashboard: React.FC = () => {
     queryKey: ['dashboardMetrics', user?.id],
     queryFn: fetchDashboardMetrics,
     enabled: !!user,
-    refetchInterval: isListening ? false : 30000, // Only poll if not realtime
+    refetchInterval: 30000,
   });
+
+  // Set up realtime updates for multiple tables
+  const { isListening: invocationsListening } = useRealtimeData({
+    table: 'invocations',
+    onUpdate: () => {
+      console.log('Invocations updated, refreshing dashboard...');
+      refetch();
+    }
+  });
+
+  const { isListening: usageListening } = useRealtimeData({
+    table: 'usage_logs',
+    onUpdate: () => {
+      console.log('Usage logs updated, refreshing dashboard...');
+      refetch();
+    }
+  });
+
+  const { isListening: billingListening } = useRealtimeData({
+    table: 'billing',
+    onUpdate: () => {
+      console.log('Billing updated, refreshing dashboard...');
+      refetch();
+    }
+  });
+
+  const isListening = invocationsListening && usageListening && billingListening;
 
   const handleRefresh = () => {
     refetch();
@@ -105,7 +127,6 @@ const Dashboard: React.FC = () => {
     if (!user) return [];
     
     try {
-      // Simplified query to avoid potential policy recursion
       const { data: invocationsData, error: invocationsError } = await supabase
         .from('invocations')
         .select('id, status, error_message, created_at')
@@ -118,7 +139,6 @@ const Dashboard: React.FC = () => {
         return [];
       }
       
-      // Transform into activity items
       return (invocationsData || []).map(inv => ({
         id: inv.id,
         type: (inv.status === 'success' ? 'usage' : 'alert') as 'usage' | 'alert',
@@ -131,14 +151,22 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const { data: activityData } = useQuery({
+  const { data: activityData, refetch: refetchActivity } = useQuery({
     queryKey: ['recentActivity', user?.id],
     queryFn: fetchRecentActivity,
     enabled: !!user,
-    refetchInterval: isListening ? false : 30000, // Only poll if not realtime
+    refetchInterval: 30000,
+  });
+
+  // Set up realtime updates for activity
+  useRealtimeData({
+    table: 'invocations',
+    onUpdate: () => {
+      console.log('Invocations updated, refreshing activity...');
+      refetchActivity();
+    }
   });
   
-  // Ensure metrics has default values
   const safeMetrics = metrics || {
     total_invocations_month: 0,
     success_rate: 0,

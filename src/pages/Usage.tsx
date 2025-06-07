@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Download, BarChart3, LineChart, Activity } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { DateRange } from 'react-day-picker';
+import { useRealtimeData } from '@/hooks/useRealtimeData';
 
 const Usage: React.FC = () => {
   const { toast } = useToast();
@@ -22,6 +23,18 @@ const Usage: React.FC = () => {
   });
   const [modelFilter, setModelFilter] = useState('all');
   const [chartType, setChartType] = useState('line');
+
+  // Set up realtime updates for usage data
+  const { isListening } = useRealtimeData({
+    table: 'usage_logs',
+    onUpdate: () => {
+      console.log('Usage data updated in real-time');
+      toast({
+        title: "Usage Data Updated",
+        description: "Your usage analytics have been updated with the latest data.",
+      });
+    }
+  });
 
   const handleExport = () => {
     toast({
@@ -37,7 +50,6 @@ const Usage: React.FC = () => {
     }, 1500);
   };
 
-  // Ensure dateRange always has both from and to for components that require it
   const getValidDateRange = (): { from: Date; to: Date } => {
     return {
       from: dateRange.from || new Date(2024, 4, 1),
@@ -52,7 +64,10 @@ const Usage: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">Usage Analytics</h1>
-            <p className="text-muted-foreground">Monitor your API usage, token consumption, and performance metrics</p>
+            <p className="text-muted-foreground">
+              Monitor your API usage, token consumption, and performance metrics
+              {isListening && <span className="ml-2 text-green-500">• Live updates enabled</span>}
+            </p>
           </div>
           <Button onClick={handleExport} className="mt-4 md:mt-0">
             <Download className="mr-2 h-4 w-4" />
