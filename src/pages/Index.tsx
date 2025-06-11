@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle } from 'lucide-react';
@@ -24,7 +23,7 @@ const Index = () => {
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button size="lg" className="bg-orchestr8-600 hover:bg-orchestr8-700 text-white font-medium px-6 py-6 text-lg rounded-md">
-                  <Link to="/dashboard" className="flex items-center">
+                  <Link to="/auth" className="flex items-center">
                     Get Started <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
@@ -146,7 +145,7 @@ const Index = () => {
           <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to orchestrate your AI ecosystem?</h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto">Join thousands of companies optimizing their AI operations with Orchestr8.</p>
           <Button size="lg" variant="secondary" className="px-8 py-6 text-lg hover:bg-white">
-            <Link to="/dashboard">Get Started Today</Link>
+            <Link to="/auth">Get Started Today</Link>
           </Button>
         </div>
       </section>
@@ -160,7 +159,7 @@ const Index = () => {
               <p className="text-muted-foreground">Simplifying AI operations</p>
             </div>
             <div className="flex gap-8">
-              <Link to="/dashboard" className="hover:text-orchestr8-600 transition-colors">Dashboard</Link>
+              <Link to="/auth" className="hover:text-orchestr8-600 transition-colors">Sign In</Link>
               <Link to="/usage" className="hover:text-orchestr8-600 transition-colors">Usage</Link>
               <Link to="/billing" className="hover:text-orchestr8-600 transition-colors">Billing</Link>
               <a href="#" className="hover:text-orchestr8-600 transition-colors">Docs</a>
