@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import { useRealtimeData } from '@/hooks/useRealtimeData';
+import SampleDataButton from '@/components/dashboard/SampleDataButton';
 
 interface DashboardMetrics {
   total_invocations_month: number;
@@ -186,6 +186,7 @@ const Dashboard: React.FC = () => {
               <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
               <RealtimeIndicator isListening={isListening} />
               <TestRealtimeButton />
+              <SampleDataButton />
             </div>
             <p className="text-muted-foreground">Welcome back{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ''}! Here's your AI operations at a glance.</p>
           </div>

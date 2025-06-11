@@ -1,10 +1,28 @@
+
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { ArrowRight, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
+  const { user, loading } = useAuth();
+
+  // If user is authenticated, redirect to dashboard
+  if (user && !loading) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Show loading while checking auth state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orchestr8-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -32,64 +50,60 @@ const Index = () => {
                 </Button>
               </div>
 
-              <div className="pt-4 border-t border-border">
-                <p className="text-sm text-muted-foreground mb-3">Trusted by innovative companies worldwide</p>
-                <div className="flex flex-wrap gap-6 items-center opacity-70">
-                  <div className="h-8 font-bold text-xl text-orchestr8-800">ACME Inc</div>
-                  <div className="h-8 font-bold text-xl text-orchestr8-800">TechGiant</div>
-                  <div className="h-8 font-bold text-xl text-orchestr8-800">AIVentures</div>
-                  <div className="h-8 font-bold text-xl text-orchestr8-800">DataFlow</div>
+              {/* Trusted by companies */}
+              <div className="pt-8">
+                <p className="text-sm text-muted-foreground mb-4">Trusted by innovative companies worldwide</p>
+                <div className="flex items-center space-x-8 opacity-60">
+                  <div className="text-2xl font-bold text-muted-foreground">TechCorp</div>
+                  <div className="text-2xl font-bold text-muted-foreground">AI Solutions</div>
+                  <div className="text-2xl font-bold text-muted-foreground">DataFlow</div>
                 </div>
               </div>
             </div>
 
+            {/* Hero Image/Illustration */}
             <div className="relative">
-              <div className="absolute -top-16 -right-16 w-64 h-64 bg-orchestr8-300 rounded-full filter blur-3xl opacity-20 animate-pulse-slow"></div>
-              <div className="absolute -bottom-8 -left-8 w-48 h-48 bg-orchestr8-500 rounded-full filter blur-3xl opacity-20 animate-pulse-slow"></div>
-              <div className="relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-1 shadow-2xl animate-float">
-                <AspectRatio ratio={16/10} className="bg-gradient-to-br from-orchestr8-500/80 to-orchestr8-700 rounded-xl overflow-hidden">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-full h-4/5 bg-white/90 rounded-lg mx-6 shadow-lg grid grid-cols-3 gap-3 p-3">
-                      <div className="col-span-2 bg-orchestr8-50 rounded-md animate-pulse-slow"></div>
-                      <div className="bg-orchestr8-50 rounded-md"></div>
-                      <div className="col-span-1 bg-orchestr8-50 rounded-md"></div>
-                      <div className="col-span-2 bg-orchestr8-50 rounded-md"></div>
-                      <div className="col-span-3 bg-orchestr8-50 rounded-md h-24"></div>
-                    </div>
-                  </div>
-                </AspectRatio>
-              </div>
+              <AspectRatio ratio={16 / 9} className="bg-muted rounded-lg overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-orchestr8-100 to-orchestr8-200 flex items-center justify-center">
+                  <div className="text-6xl text-orchestr8-400">📊</div>
+                </div>
+              </AspectRatio>
             </div>
           </div>
         </div>
       </section>
 
       {/* Value Proposition */}
-      <section id="features" className="py-20 bg-orchestr8-50/20">
+      <section id="features" className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">Why Choose Orchestr8?</h2>
-          
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Everything you need to manage AI at scale</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              From monitoring to optimization, Orchestr8 provides all the tools you need to run AI operations efficiently.
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
-                title: "One-Click Orchestration",
-                description: "Connect and manage all your AI models through a single unified interface without complex integrations.",
-                icon: <div className="w-12 h-12 bg-orchestr8-100 rounded-full flex items-center justify-center text-orchestr8-600 mb-6">1</div>
+                icon: "🔍",
+                title: "Real-time Monitoring",
+                description: "Track your AI models' performance, usage, and costs in real-time with comprehensive dashboards."
               },
               {
-                title: "Real-Time Analytics",
-                description: "Get instant insights into your AI operations with comprehensive dashboards and monitoring tools.",
-                icon: <div className="w-12 h-12 bg-orchestr8-100 rounded-full flex items-center justify-center text-orchestr8-600 mb-6">2</div>
+                icon: "⚡",
+                title: "Smart Optimization",
+                description: "Automatically optimize your AI workflows for better performance and cost efficiency."
               },
               {
-                title: "Simplified Billing",
-                description: "Track costs across all AI services with transparent pricing and consolidated invoicing.",
-                icon: <div className="w-12 h-12 bg-orchestr8-100 rounded-full flex items-center justify-center text-orchestr8-600 mb-6">3</div>
+                icon: "🔒",
+                title: "Enterprise Security",
+                description: "Bank-grade security with role-based access control and comprehensive audit logs."
               }
             ].map((feature, index) => (
-              <div key={index} className="bg-white p-8 rounded-xl shadow-sm border border-border hover:shadow-md transition-shadow">
-                {feature.icon}
-                <h3 className="text-xl font-semibold mb-4">{feature.title}</h3>
+              <div key={index} className="bg-background p-8 rounded-lg shadow-sm border">
+                <div className="text-4xl mb-4">{feature.icon}</div>
+                <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
                 <p className="text-muted-foreground">{feature.description}</p>
               </div>
             ))}
@@ -100,38 +114,33 @@ const Index = () => {
       {/* Testimonials */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">What Our Customers Say</h2>
-          
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">What our customers say</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
-                quote: "Orchestr8 has transformed how we manage our AI infrastructure. The cost savings and efficiency gains have been substantial.",
+                quote: "Orchestr8 transformed how we manage our AI infrastructure. The real-time monitoring is game-changing.",
                 author: "Sarah Chen",
-                role: "CTO, AIVentures"
+                title: "CTO, TechStart"
               },
               {
-                quote: "The analytics provided by Orchestr8 gave us insights we never had before. Our model performance improved by 32% in two months.",
+                quote: "The cost optimization features alone have saved us 40% on our AI operations budget.",
                 author: "Michael Rodriguez",
-                role: "AI Engineer, DataFlow"
+                title: "Head of AI, DataCorp"
               },
               {
-                quote: "The simplified billing alone was worth the switch. No more surprises at the end of the month from our AI providers.",
-                author: "Jessica Kim",
-                role: "Finance Director, TechGiant"
+                quote: "Finally, a platform that understands the complexity of enterprise AI operations.",
+                author: "Jennifer Kim",
+                title: "AI Director, FinanceFlow"
               }
             ].map((testimonial, index) => (
-              <div key={index} className="bg-background p-8 rounded-xl shadow-sm border border-border hover:border-orchestr8-300 transition-colors">
-                <div className="flex mb-6">
-                  {[1, 2, 3, 4, 5].map(star => (
-                    <svg key={star} className="w-5 h-5 text-yellow-500 fill-current" viewBox="0 0 24 24">
-                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
-                    </svg>
-                  ))}
-                </div>
-                <p className="italic mb-6">{testimonial.quote}</p>
-                <div>
-                  <p className="font-semibold">{testimonial.author}</p>
-                  <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+              <div key={index} className="bg-muted/30 p-6 rounded-lg">
+                <p className="text-muted-foreground mb-4">"{testimonial.quote}"</p>
+                <div className="flex items-center">
+                  <div className="w-10 h-10 bg-orchestr8-200 rounded-full mr-3"></div>
+                  <div>
+                    <p className="font-semibold">{testimonial.author}</p>
+                    <p className="text-sm text-muted-foreground">{testimonial.title}</p>
+                  </div>
                 </div>
               </div>
             ))}
@@ -160,8 +169,7 @@ const Index = () => {
             </div>
             <div className="flex gap-8">
               <Link to="/auth" className="hover:text-orchestr8-600 transition-colors">Sign In</Link>
-              <Link to="/usage" className="hover:text-orchestr8-600 transition-colors">Usage</Link>
-              <Link to="/billing" className="hover:text-orchestr8-600 transition-colors">Billing</Link>
+              <a href="#features" className="hover:text-orchestr8-600 transition-colors">Features</a>
               <a href="#" className="hover:text-orchestr8-600 transition-colors">Docs</a>
               <a href="#" className="hover:text-orchestr8-600 transition-colors">Support</a>
             </div>

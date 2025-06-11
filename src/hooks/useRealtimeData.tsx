@@ -23,14 +23,14 @@ export const useRealtimeData = ({ table, event = '*', onUpdate }: UseRealtimeDat
     const channel = supabase
       .channel(`realtime-${table}`)
       .on(
-        'postgres_changes',
+        'postgres_changes' as any,
         {
           event,
           schema: 'public',
           table,
           filter: `user_id=eq.${user.id}`
         },
-        (payload) => {
+        (payload: any) => {
           console.log(`Realtime update on ${table}:`, payload);
           
           // Show toast notification for important events
