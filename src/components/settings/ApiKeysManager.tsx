@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -77,29 +76,61 @@ const ApiKeysManager: React.FC = () => {
 
   // Load API keys on component mount
   useEffect(() => {
-    // For demo purposes, load some sample API keys
-    const sampleKeys: ApiKey[] = [
-      {
-        id: '1',
-        name: 'Production OpenAI',
-        service: 'openai',
-        preview: 'sk-proj-...8x2a',
-        created_at: new Date(Date.now() - 86400000).toISOString(),
-        last_used: new Date().toISOString(),
-        status: 'active'
-      },
-      {
-        id: '2',
-        name: 'Stripe Live',
-        service: 'stripe',
-        preview: 'sk_live_...9f3b',
-        created_at: new Date(Date.now() - 172800000).toISOString(),
-        last_used: new Date(Date.now() - 3600000).toISOString(),
-        status: 'active'
+    loadApiKeys();
+  }, [user]);
+
+  const loadApiKeys = () => {
+    if (!user) return;
+
+    // Load API keys from localStorage for demo
+    const storedKeys: ApiKey[] = [];
+    
+    // Check for existing keys in localStorage
+    const allKeys = Object.keys(localStorage);
+    allKeys.forEach(key => {
+      if (key.includes(user.id) && (key.includes('api_key') || key.includes('openai') || key.includes('stripe'))) {
+        const value = localStorage.getItem(key);
+        if (value && value.startsWith('sk-')) {
+          const service = key.includes('openai') ? 'openai' : 'unknown';
+          storedKeys.push({
+            id: key,
+            name: service === 'openai' ? 'OpenAI API Key' : 'API Key',
+            service,
+            preview: `${value.substring(0, 8)}...${value.substring(value.length - 4)}`,
+            created_at: new Date().toISOString(),
+            status: 'active'
+          });
+        }
       }
-    ];
-    setApiKeys(sampleKeys);
-  }, []);
+    });
+
+    // Add sample keys if none exist
+    if (storedKeys.length === 0) {
+      const sampleKeys: ApiKey[] = [
+        {
+          id: '1',
+          name: 'Production OpenAI',
+          service: 'openai',
+          preview: 'sk-proj-...8x2a',
+          created_at: new Date(Date.now() - 86400000).toISOString(),
+          last_used: new Date().toISOString(),
+          status: 'active'
+        },
+        {
+          id: '2',
+          name: 'Stripe Live',
+          service: 'stripe',
+          preview: 'sk_live_...9f3b',
+          created_at: new Date(Date.now() - 172800000).toISOString(),
+          last_used: new Date(Date.now() - 3600000).toISOString(),
+          status: 'active'
+        }
+      ];
+      setApiKeys(sampleKeys);
+    } else {
+      setApiKeys(storedKeys);
+    }
+  };
 
   const toggleKeyVisibility = (keyId: string) => {
     setShowKeys(prev => ({
@@ -132,9 +163,18 @@ const ApiKeysManager: React.FC = () => {
 
       if (error) throw error;
 
+      // Store in localStorage for demo purposes and dashboard integration
+      const storageKey = `settings_${newApiKey.service}_${user.id}`;
+      localStorage.setItem(storageKey, newApiKey.key);
+
+      // If it's an OpenAI key, also store it with the dashboard-compatible key name
+      if (newApiKey.service === 'openai') {
+        localStorage.setItem(`api_key_${user.id}`, newApiKey.key);
+      }
+
       toast({
         title: "API Key Saved",
-        description: `${newApiKey.name} has been securely stored and encrypted`,
+        description: `${newApiKey.name} has been securely stored and is now available for the live dashboard`,
       });
 
       // Add to local state for display
@@ -169,6 +209,19 @@ const ApiKeysManager: React.FC = () => {
     if (!confirm(`Are you sure you want to delete "${keyName}"? This action cannot be undone.`)) return;
 
     try {
+      // Remove from localStorage if it exists
+      if (user) {
+        const possibleKeys = [
+          `settings_openai_${user.id}`,
+          `api_key_${user.id}`,
+          keyId // if keyId is the localStorage key itself
+        ];
+        
+        possibleKeys.forEach(key => {
+          localStorage.removeItem(key);
+        });
+      }
+
       // Remove from local state
       setApiKeys(prev => prev.filter(key => key.id !== keyId));
       

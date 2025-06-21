@@ -23,13 +23,40 @@ const DashboardFlow: React.FC = () => {
     }
 
     try {
-      // Check if user has an existing API key
-      // For demo purposes, we'll check localStorage as well
+      // First check localStorage for demo purposes
       const storedKey = localStorage.getItem(`api_key_${user.id}`);
       if (storedKey) {
         setApiKey(storedKey);
         setCurrentStep('dashboard');
         return;
+      }
+
+      // Check if user has saved an OpenAI API key in Settings
+      // Since we're using localStorage in ApiKeysManager for demo purposes,
+      // let's check for a more standard key name too
+      const settingsApiKey = localStorage.getItem('openai_api_key') || 
+                            localStorage.getItem(`settings_openai_${user.id}`);
+      
+      if (settingsApiKey) {
+        setApiKey(settingsApiKey);
+        setCurrentStep('dashboard');
+        return;
+      }
+
+      // Try to get from the sample keys we might have in ApiKeysManager
+      // Check for any OpenAI keys stored
+      const allKeys = Object.keys(localStorage);
+      const openaiKey = allKeys.find(key => 
+        key.includes('openai') && key.includes(user.id)
+      );
+      
+      if (openaiKey) {
+        const keyValue = localStorage.getItem(openaiKey);
+        if (keyValue) {
+          setApiKey(keyValue);
+          setCurrentStep('dashboard');
+          return;
+        }
       }
     } catch (error) {
       console.error('Error checking existing API key:', error);
@@ -43,6 +70,8 @@ const DashboardFlow: React.FC = () => {
     // Store in localStorage for demo purposes
     if (user) {
       localStorage.setItem(`api_key_${user.id}`, key);
+      // Also store with a settings-compatible key name
+      localStorage.setItem(`settings_openai_${user.id}`, key);
     }
     setCurrentStep('dashboard');
   };
@@ -51,6 +80,7 @@ const DashboardFlow: React.FC = () => {
     setApiKey('');
     if (user) {
       localStorage.removeItem(`api_key_${user.id}`);
+      localStorage.removeItem(`settings_openai_${user.id}`);
     }
     setCurrentStep('apiKey');
   };
