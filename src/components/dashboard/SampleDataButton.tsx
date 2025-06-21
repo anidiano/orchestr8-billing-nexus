@@ -26,27 +26,27 @@ const SampleDataButton: React.FC = () => {
     try {
       console.log('Starting sample data creation for user:', user.id);
 
-      // 1. Create sample orchestrations
+      // 1. Create sample orchestrations with properly typed status
       const orchestrationsData = [
         {
           user_id: user.id,
           name: "Customer Support AI",
           description: "AI-powered customer support automation",
-          status: "active",
+          status: "active" as const,
           config: { model: "gpt-4-turbo", temperature: 0.7 }
         },
         {
           user_id: user.id,
           name: "Content Generator",
           description: "Automated content generation pipeline",
-          status: "active",
+          status: "active" as const,
           config: { model: "claude-3-opus", temperature: 0.5 }
         },
         {
           user_id: user.id,
           name: "Data Analyzer",
           description: "Real-time data analysis orchestration",
-          status: "paused",
+          status: "paused" as const,
           config: { model: "gpt-3.5-turbo", temperature: 0.3 }
         }
       ];
@@ -71,7 +71,7 @@ const SampleDataButton: React.FC = () => {
           invocationsData.push({
             user_id: user.id,
             orchestration_id: orch.id,
-            status: Math.random() > 0.2 ? 'success' : 'failed',
+            status: Math.random() > 0.2 ? 'success' as const : 'failed' as const,
             duration_ms: Math.floor(Math.random() * 5000) + 500,
             input_data: { query: `Sample input ${i + 1}` },
             output_data: { result: `Sample output ${i + 1}` },
@@ -107,12 +107,12 @@ const SampleDataButton: React.FC = () => {
         }
       }
 
-      // 4. Update billing to reflect usage
+      // 4. Update billing to reflect usage and set to pro plan
       const { error: billingError } = await supabase
         .from('billing')
         .update({
           credits_used: Math.floor(Math.random() * 500) + 100,
-          current_plan: 'pro',
+          current_plan: 'pro' as const,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id);
