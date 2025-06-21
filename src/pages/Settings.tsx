@@ -16,6 +16,8 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import ApiKeysManager from '@/components/settings/ApiKeysManager';
+import SecuritySettings from '@/components/settings/SecuritySettings';
+import NotificationPreferences from '@/components/settings/NotificationPreferences';
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
@@ -28,20 +30,10 @@ const Settings: React.FC = () => {
   const [language, setLanguage] = useState('en');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   
-  // Notification preferences
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [smsNotifications, setSmsNotifications] = useState(false);
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [marketingEmails, setMarketingEmails] = useState(false);
-  
-  // Security settings
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [activeSessions, setActiveSessions] = useState(1);
-  
   // Data & Privacy
   const [dataRetention, setDataRetention] = useState('90');
   const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
-  
+
   useEffect(() => {
     if (user) {
       setFullName(user.user_metadata?.full_name || '');
@@ -363,109 +355,11 @@ const Settings: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="notifications" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="h-5 w-5" />
-                  Notification Preferences
-                </CardTitle>
-                <CardDescription>Choose how you want to be notified about important events</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-base">Email Notifications</Label>
-                      <p className="text-sm text-muted-foreground">Receive notifications via email</p>
-                    </div>
-                    <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-base">SMS Notifications</Label>
-                      <p className="text-sm text-muted-foreground">Receive critical alerts via SMS</p>
-                    </div>
-                    <Switch checked={smsNotifications} onCheckedChange={setSmsNotifications} />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-base">Push Notifications</Label>
-                      <p className="text-sm text-muted-foreground">Browser push notifications</p>
-                    </div>
-                    <Switch checked={pushNotifications} onCheckedChange={setPushNotifications} />
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-base">Marketing Emails</Label>
-                      <p className="text-sm text-muted-foreground">Product updates and promotional content</p>
-                    </div>
-                    <Switch checked={marketingEmails} onCheckedChange={setMarketingEmails} />
-                  </div>
-                </div>
-                
-                <Button>Save Notification Preferences</Button>
-              </CardContent>
-            </Card>
+            <NotificationPreferences />
           </TabsContent>
 
           <TabsContent value="security" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Security Settings
-                </CardTitle>
-                <CardDescription>Manage your account security and access</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <h4 className="font-medium">Two-Factor Authentication</h4>
-                      <p className="text-sm text-muted-foreground">Add an extra layer of security to your account</p>
-                      {twoFactorEnabled && <Badge className="mt-1">Enabled</Badge>}
-                    </div>
-                    <Button 
-                      variant={twoFactorEnabled ? "outline" : "default"}
-                      onClick={() => setTwoFactorEnabled(!twoFactorEnabled)}
-                    >
-                      {twoFactorEnabled ? 'Disable' : 'Enable'}
-                    </Button>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <h4 className="font-medium">Change Password</h4>
-                      <p className="text-sm text-muted-foreground">Update your password regularly for better security</p>
-                    </div>
-                    <Button variant="outline" onClick={handleChangePassword}>
-                      Send Reset Email
-                    </Button>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <h4 className="font-medium">Active Sessions</h4>
-                      <p className="text-sm text-muted-foreground">You have {activeSessions} active session(s)</p>
-                    </div>
-                    <Button variant="outline">View Sessions</Button>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <h4 className="font-medium">Login History</h4>
-                      <p className="text-sm text-muted-foreground">View your recent login activity</p>
-                    </div>
-                    <Button variant="outline">View History</Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <SecuritySettings />
           </TabsContent>
 
           <TabsContent value="preferences" className="space-y-6">
