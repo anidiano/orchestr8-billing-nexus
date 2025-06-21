@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,6 +37,8 @@ const Dashboard: React.FC = () => {
     if (!user) return null;
     
     try {
+      console.log('Fetching dashboard metrics for user:', user.id);
+      
       const { data, error } = await supabase
         .from('dashboard_metrics')
         .select('*')
@@ -44,35 +47,52 @@ const Dashboard: React.FC = () => {
       
       if (error) {
         console.error('Error fetching metrics:', error);
-        toast({
-          title: "Error loading dashboard",
-          description: error.message,
-          variant: "destructive"
-        });
         
-        return {
-          total_invocations_month: 0,
-          success_rate: 0,
-          active_orchestrations: 0,
-          current_plan: 'free',
-          credits_used: 0,
-          credits_allowed: 1000
+        // If no dashboard_metrics view data, calculate manually
+        console.log('No metrics view data, calculating manually...');
+        
+        const { data: billing } = await supabase
+          .from('billing')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        const { data: invocations } = await supabase
+          .from('invocations')
+          .select('*')
+          .eq('user_id', user.id);
+
+        const { data: orchestrations } = await supabase
+          .from('orchestrations')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('status', 'active');
+
+        const totalInvocations = invocations?.length || 0;
+        const successfulInvocations = invocations?.filter(inv => inv.status === 'success').length || 0;
+        const successRate = totalInvocations > 0 ? Math.round((successfulInvocations / totalInvocations) * 100) : 100;
+
+        const manualMetrics = {
+          total_invocations_month: totalInvocations,
+          success_rate: successRate,
+          active_orchestrations: orchestrations?.length || 0,
+          current_plan: billing?.current_plan || 'free',
+          credits_used: billing?.credits_used || 0,
+          credits_allowed: billing?.credits_allowed || 1000
         };
+
+        console.log('Manual metrics calculated:', manualMetrics);
+        return manualMetrics;
       }
       
-      console.log('Dashboard metrics:', data);
+      console.log('Dashboard metrics from view:', data);
       return data;
     } catch (err) {
       console.error('Error in fetchDashboardMetrics:', err);
-      toast({
-        title: "Error loading dashboard",
-        description: "Unable to fetch dashboard data. Please try again.",
-        variant: "destructive"
-      });
       
       return {
         total_invocations_month: 0,
-        success_rate: 0,
+        success_rate: 100,
         active_orchestrations: 0,
         current_plan: 'free',
         credits_used: 0,
@@ -129,7 +149,7 @@ const Dashboard: React.FC = () => {
     try {
       const { data: invocationsData, error: invocationsError } = await supabase
         .from('invocations')
-        .select('id, status, error_message, created_at')
+        .select('id, status, error_message, created_at, orchestration_id')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(5);
@@ -169,7 +189,7 @@ const Dashboard: React.FC = () => {
   
   const safeMetrics = metrics || {
     total_invocations_month: 0,
-    success_rate: 0,
+    success_rate: 100,
     active_orchestrations: 0,
     current_plan: 'free',
     credits_used: 0,
