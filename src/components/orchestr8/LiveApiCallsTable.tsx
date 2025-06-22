@@ -2,16 +2,16 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { 
+  Activity,
+  CheckCircle, 
+  XCircle, 
+  Clock, 
+  DollarSign,
+  Zap,
+  Server
+} from 'lucide-react';
 import { ApiCallLog } from '@/types/orchestr8';
-import { CheckCircle, XCircle, Clock, Zap } from 'lucide-react';
 
 interface LiveApiCallsTableProps {
   calls: ApiCallLog[];
@@ -19,115 +19,105 @@ interface LiveApiCallsTableProps {
 }
 
 const LiveApiCallsTable: React.FC<LiveApiCallsTableProps> = ({ calls, isLive }) => {
+  const formatCost = (cost: number) => {
+    return `$${cost.toFixed(6)}`;
+  };
+
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString();
   };
 
-  const getStatusBadge = (success: boolean, statusCode: number) => {
-    if (success && statusCode >= 200 && statusCode < 300) {
-      return (
-        <Badge variant="default" className="bg-green-500">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Success
-        </Badge>
-      );
-    }
-    return (
-      <Badge variant="destructive">
-        <XCircle className="h-3 w-3 mr-1" />
-        Error
-      </Badge>
+  const getStatusIcon = (success: boolean) => {
+    return success ? (
+      <CheckCircle className="h-4 w-4 text-green-500" />
+    ) : (
+      <XCircle className="h-4 w-4 text-red-500" />
     );
   };
 
-  const getProviderIcon = (providerId: string) => {
-    const icons: { [key: string]: string } = {
-      'openai': '🤖',
-      'anthropic': '🧠',
-      'stability': '🎨',
-      'cohere': '🔮',
-      'huggingface': '🤗'
+  const getProviderColor = (provider: string) => {
+    const colors: Record<string, string> = {
+      'openai': 'bg-green-100 text-green-800',
+      'anthropic': 'bg-orange-100 text-orange-800',
+      'stability': 'bg-purple-100 text-purple-800',
+      'default': 'bg-gray-100 text-gray-800'
     };
-    return icons[providerId] || '⚙️';
+    return colors[provider.toLowerCase()] || colors.default;
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Live API Calls
-          </CardTitle>
-          <Badge variant={isLive ? "default" : "secondary"} className={isLive ? "bg-green-500" : ""}>
-            <div className={`w-2 h-2 rounded-full ${isLive ? 'bg-white animate-pulse' : 'bg-gray-300'} mr-2`} />
-            {isLive ? 'Live' : 'Offline'}
-          </Badge>
-        </div>
+    <Card className="w-full">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          <Activity className="h-5 w-5" />
+          Live API Calls
+        </CardTitle>
+        <Badge variant={isLive ? "default" : "secondary"} className={isLive ? "bg-green-500" : ""}>
+          <div className={`w-2 h-2 rounded-full ${isLive ? 'bg-white animate-pulse' : 'bg-gray-300'} mr-2`} />
+          {isLive ? 'Live' : 'Offline'}
+        </Badge>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Time</TableHead>
-                <TableHead>Provider</TableHead>
-                <TableHead>Endpoint</TableHead>
-                <TableHead>Model</TableHead>
-                <TableHead className="text-right">Tokens</TableHead>
-                <TableHead className="text-right">Cost</TableHead>
-                <TableHead className="text-right">Time (ms)</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {calls.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                    No API calls recorded yet. Start using your connected providers to see real-time data.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                calls.slice(0, 20).map((call) => (
-                  <TableRow key={call.id} className="hover:bg-muted/50">
-                    <TableCell className="font-mono text-sm">
-                      {formatTime(call.created_at)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{getProviderIcon(call.provider_id)}</span>
-                        <span className="capitalize">{call.provider_id}</span>
+        <div className="space-y-4">
+          {calls.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Server className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No API calls yet. Connect your providers to start tracking.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {calls.slice(0, 10).map((call) => (
+                <div
+                  key={call.id}
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center space-x-4 flex-1">
+                    <div className="flex items-center space-x-2">
+                      {getStatusIcon(call.success)}
+                      <Badge className={getProviderColor(call.provider_id)}>
+                        {call.provider_id}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium text-sm truncate">
+                          {call.endpoint}
+                        </span>
+                        {call.model && (
+                          <Badge variant="outline" className="text-xs">
+                            {call.model}
+                          </Badge>
+                        )}
                       </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {call.endpoint}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{call.model || 'N/A'}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Zap className="h-3 w-3 text-yellow-500" />
-                        {call.total_tokens.toLocaleString()}
+                      <div className="text-xs text-muted-foreground">
+                        {formatTime(call.created_at)}
                       </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      ${Number(call.cost_usd).toFixed(4)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-4 text-sm">
+                    <div className="flex items-center space-x-1">
+                      <Zap className="h-3 w-3 text-yellow-500" />
+                      <span>{call.total_tokens.toLocaleString()}</span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-1">
+                      <DollarSign className="h-3 w-3 text-green-500" />
+                      <span>{formatCost(call.cost_usd)}</span>
+                    </div>
+                    
+                    {call.response_time_ms && (
+                      <div className="flex items-center space-x-1">
                         <Clock className="h-3 w-3 text-blue-500" />
-                        {call.response_time_ms}
+                        <span>{call.response_time_ms}ms</span>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      {getStatusBadge(call.success, call.status_code)}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
