@@ -6,81 +6,104 @@ import ApiKeySetup from './ApiKeySetup';
 import LiveDataDashboard from './LiveDataDashboard';
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from 'lucide-react';
+import { ApiKeyConfig } from '@/types/apiProviders';
 
 const DashboardFlow: React.FC = () => {
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState<'loading' | 'apiKey' | 'dashboard'>('loading');
-  const [apiKey, setApiKey] = useState<string>('');
+  const [activeApiKeys, setActiveApiKeys] = useState<ApiKeyConfig[]>([]);
 
   useEffect(() => {
-    checkExistingApiKey();
+    checkExistingApiKeys();
   }, [user]);
 
-  const checkExistingApiKey = async () => {
+  const checkExistingApiKeys = async () => {
     if (!user) {
       setCurrentStep('apiKey');
       return;
     }
 
     try {
-      // First check localStorage for demo purposes
-      const storedKey = localStorage.getItem(`api_key_${user.id}`);
-      if (storedKey) {
-        setApiKey(storedKey);
-        setCurrentStep('dashboard');
-        return;
-      }
-
-      // Check if user has saved an OpenAI API key in Settings
-      // Since we're using localStorage in ApiKeysManager for demo purposes,
-      // let's check for a more standard key name too
-      const settingsApiKey = localStorage.getItem('openai_api_key') || 
-                            localStorage.getItem(`settings_openai_${user.id}`);
-      
-      if (settingsApiKey) {
-        setApiKey(settingsApiKey);
-        setCurrentStep('dashboard');
-        return;
-      }
-
-      // Try to get from the sample keys we might have in ApiKeysManager
-      // Check for any OpenAI keys stored
-      const allKeys = Object.keys(localStorage);
-      const openaiKey = allKeys.find(key => 
-        key.includes('openai') && key.includes(user.id)
-      );
-      
-      if (openaiKey) {
-        const keyValue = localStorage.getItem(openaiKey);
-        if (keyValue) {
-          setApiKey(keyValue);
+      // Load API configurations from the new system
+      const stored = localStorage.getItem(`api_configs_${user.id}`);
+      if (stored) {
+        const configs: ApiKeyConfig[] = JSON.parse(stored);
+        const activeConfigs = configs.filter(config => 
+          config.isActive && config.status === 'connected'
+        );
+        
+        if (activeConfigs.length > 0) {
+          setActiveApiKeys(activeConfigs);
           setCurrentStep('dashboard');
           return;
         }
       }
+
+      // Fallback: Check for legacy OpenAI keys
+      const legacyKeys = [
+        localStorage.getItem(`api_key_${user.id}`),
+        localStorage.getItem('openai_api_key'),
+        localStorage.getItem(`settings_openai_${user.id}`)
+      ].filter(Boolean);
+
+      if (legacyKeys.length > 0) {
+        // Create a legacy config for backward compatibility
+        const legacyConfig: ApiKeyConfig = {
+          id: 'legacy-openai',
+          providerId: 'openai',
+          name: 'Legacy OpenAI',
+          apiKey: legacyKeys[0]!,
+          baseUrl: 'https://api.openai.com/v1',
+          authType: 'bearer',
+          isActive: true,
+          status: 'connected',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        setActiveApiKeys([legacyConfig]);
+        setCurrentStep('dashboard');
+        return;
+      }
     } catch (error) {
-      console.error('Error checking existing API key:', error);
+      console.error('Error checking existing API keys:', error);
     }
     
     setCurrentStep('apiKey');
   };
 
   const handleApiKeyValidated = (key: string) => {
-    setApiKey(key);
-    // Store in localStorage for demo purposes
+    // Create a configuration for the validated key
+    const newConfig: ApiKeyConfig = {
+      id: 'dashboard-openai',
+      providerId: 'openai',
+      name: 'Dashboard OpenAI',
+      apiKey: key,
+      baseUrl: 'https://api.openai.com/v1',
+      authType: 'bearer',
+      isActive: true,
+      status: 'connected',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    setActiveApiKeys([newConfig]);
+    
+    // Store in localStorage for backward compatibility
     if (user) {
       localStorage.setItem(`api_key_${user.id}`, key);
-      // Also store with a settings-compatible key name
       localStorage.setItem(`settings_openai_${user.id}`, key);
     }
+    
     setCurrentStep('dashboard');
   };
 
   const handleReset = () => {
-    setApiKey('');
+    setActiveApiKeys([]);
     if (user) {
       localStorage.removeItem(`api_key_${user.id}`);
       localStorage.removeItem(`settings_openai_${user.id}`);
+      localStorage.removeItem(`api_configs_${user.id}`);
     }
     setCurrentStep('apiKey');
   };
@@ -105,7 +128,7 @@ const DashboardFlow: React.FC = () => {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <ApiKeySetup 
           onApiKeyValidated={handleApiKeyValidated}
-          existingKey={apiKey}
+          existingKey={activeApiKeys[0]?.apiKey || ''}
         />
       </div>
     );
@@ -114,7 +137,7 @@ const DashboardFlow: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <LiveDataDashboard 
-        apiKey={apiKey}
+        apiConfigs={activeApiKeys}
         onReset={handleReset}
       />
     </div>
