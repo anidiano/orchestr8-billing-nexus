@@ -1,33 +1,41 @@
 
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { useRealUsageData } from '@/hooks/useRealUsageData';
 
 interface UsageBreakdownChartProps {
   modelFilter: string;
 }
 
-const data = [
-  { name: 'GPT-4-Turbo', value: 45, color: '#0ca5e9' },
-  { name: 'Claude 3 Opus', value: 30, color: '#0284c7' },
-  { name: 'GPT-3.5-Turbo', value: 15, color: '#7cd4fd' },
-  { name: 'Llama 3', value: 10, color: '#36bffa' },
-];
-
 export function UsageBreakdownChart({ modelFilter }: UsageBreakdownChartProps) {
-  // Filter data based on modelFilter
-  const filteredData = modelFilter === 'all' 
-    ? data 
-    : data.filter(item => item.name.toLowerCase().includes(modelFilter.toLowerCase()));
+  const { breakdownData, isLoading } = useRealUsageData(
+    { from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), to: new Date() },
+    modelFilter
+  );
 
-  // Custom label component for the pie chart
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }: any) => {
+  if (isLoading) {
+    return (
+      <div className="h-[300px] flex items-center justify-center">
+        <div className="text-muted-foreground">Loading breakdown data...</div>
+      </div>
+    );
+  }
+
+  if (!breakdownData || breakdownData.length === 0) {
+    return (
+      <div className="h-[300px] flex items-center justify-center">
+        <div className="text-muted-foreground">No usage data available</div>
+      </div>
+    );
+  }
+
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+    if (percent < 0.05) return null;
+
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-    // Only show label if segment is big enough (over 5%)
-    if (percent < 0.05) return null;
 
     return (
       <text 
@@ -55,7 +63,6 @@ export function UsageBreakdownChart({ modelFilter }: UsageBreakdownChartProps) {
         </div>
       );
     }
-  
     return null;
   };
 
@@ -64,7 +71,7 @@ export function UsageBreakdownChart({ modelFilter }: UsageBreakdownChartProps) {
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
-            data={filteredData}
+            data={breakdownData}
             cx="50%"
             cy="50%"
             labelLine={false}
@@ -74,32 +81,13 @@ export function UsageBreakdownChart({ modelFilter }: UsageBreakdownChartProps) {
             dataKey="value"
             label={renderCustomizedLabel}
             paddingAngle={2}
-            animationBegin={0}
-            animationDuration={1000}
-            animationEasing="ease-out"
           >
-            {filteredData.map((entry, index) => (
-              <Cell 
-                key={`cell-${index}`} 
-                fill={entry.color} 
-                stroke="white" 
-                strokeWidth={2}
-                style={{
-                  filter: 'drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.1))'
-                }}
-              />
+            {breakdownData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color} />
             ))}
           </Pie>
           <Tooltip content={<CustomTooltip />} />
-          <Legend 
-            layout="horizontal" 
-            verticalAlign="bottom" 
-            align="center"
-            formatter={(value, entry, index) => (
-              <span className="text-sm font-medium">{value}</span>
-            )}
-            wrapperStyle={{ paddingTop: 20 }}
-          />
+          <Legend />
         </PieChart>
       </ResponsiveContainer>
     </div>

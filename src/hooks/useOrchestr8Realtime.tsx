@@ -20,150 +20,146 @@ export const useOrchestr8Realtime = () => {
     costPerHour: 0
   });
 
+  const fetchApiCalls = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('api_call_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error('Error fetching API calls:', error);
+        return;
+      }
+
+      setApiCalls(data || []);
+    } catch (error) {
+      console.error('Error in fetchApiCalls:', error);
+    }
+  };
+
+  const fetchProviders = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('api_providers')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error fetching providers:', error);
+        return;
+      }
+
+      setProviders(data || []);
+    } catch (error) {
+      console.error('Error in fetchProviders:', error);
+    }
+  };
+
+  const calculateMetrics = (calls: ApiCallLog[], providers: ApiProvider[]) => {
+    if (calls.length === 0) {
+      return {
+        totalCalls: 0,
+        totalTokens: 0,
+        totalCost: 0,
+        avgResponseTime: 0,
+        successRate: 100,
+        activeProviders: providers.filter(p => p.is_active).length,
+        callsPerMinute: 0,
+        costPerHour: 0
+      };
+    }
+
+    const totalCalls = calls.length;
+    const totalTokens = calls.reduce((sum, call) => sum + call.total_tokens, 0);
+    const totalCost = calls.reduce((sum, call) => sum + call.cost_usd, 0);
+    const avgResponseTime = calls.reduce((sum, call) => sum + (call.response_time_ms || 0), 0) / totalCalls;
+    const successRate = (calls.filter(call => call.success).length / totalCalls) * 100;
+    
+    // Calculate calls per minute (last hour)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const recentCalls = calls.filter(call => new Date(call.created_at) > oneHourAgo);
+    const callsPerMinute = recentCalls.length / 60;
+    
+    // Calculate cost per hour
+    const costPerHour = totalCost * (60 / Math.max(1, totalCalls));
+
+    return {
+      totalCalls,
+      totalTokens,
+      totalCost,
+      avgResponseTime: Math.round(avgResponseTime),
+      successRate: Math.round(successRate * 100) / 100,
+      activeProviders: providers.filter(p => p.is_active).length,
+      callsPerMinute: Math.round(callsPerMinute * 100) / 100,
+      costPerHour: Math.round(costPerHour * 10000) / 10000
+    };
+  };
+
   useEffect(() => {
     if (!user) return;
 
     console.log('Setting up Orchestr8 realtime connection for user:', user.id);
     setIsLive(true);
 
-    // For now, let's simulate data until the new tables are available in types
-    const generateMockData = () => {
-      const mockCalls: ApiCallLog[] = [
+    // Initial data fetch
+    fetchApiCalls();
+    fetchProviders();
+
+    // Set up realtime subscriptions
+    const apiCallsChannel = supabase
+      .channel('api_call_logs_changes')
+      .on(
+        'postgres_changes',
         {
-          id: '1',
-          user_id: user.id,
-          provider_id: 'openai',
-          endpoint: '/v1/chat/completions',
-          method: 'POST',
-          model: 'gpt-4',
-          tokens_input: 150,
-          tokens_output: 300,
-          total_tokens: 450,
-          cost_usd: 0.0135,
-          response_time_ms: 1200,
-          status_code: 200,
-          success: true,
-          error_message: undefined,
-          request_metadata: {},
-          response_metadata: {},
-          created_at: new Date().toISOString()
+          event: '*',
+          schema: 'public',
+          table: 'api_call_logs',
+          filter: `user_id=eq.${user.id}`
         },
-        {
-          id: '2',
-          user_id: user.id,
-          provider_id: 'anthropic',
-          endpoint: '/v1/messages',
-          method: 'POST',
-          model: 'claude-3-sonnet',
-          tokens_input: 200,
-          tokens_output: 500,
-          total_tokens: 700,
-          cost_usd: 0.021,
-          response_time_ms: 800,
-          status_code: 200,
-          success: true,
-          error_message: undefined,
-          request_metadata: {},
-          response_metadata: {},
-          created_at: new Date(Date.now() - 30000).toISOString()
+        (payload) => {
+          console.log('API call log change:', payload);
+          fetchApiCalls();
         }
-      ];
+      )
+      .subscribe();
 
-      const mockProviders: ApiProvider[] = [
+    const providersChannel = supabase
+      .channel('api_providers_changes')
+      .on(
+        'postgres_changes',
         {
-          id: '1',
-          user_id: user.id,
-          provider_id: 'openai',
-          provider_name: 'OpenAI',
-          api_key_encrypted: 'encrypted_key_1',
-          auth_type: 'bearer',
-          is_active: true,
-          status: 'connected',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          event: '*',
+          schema: 'public',
+          table: 'api_providers',
+          filter: `user_id=eq.${user.id}`
         },
-        {
-          id: '2',
-          user_id: user.id,
-          provider_id: 'anthropic',
-          provider_name: 'Anthropic',
-          api_key_encrypted: 'encrypted_key_2',
-          auth_type: 'bearer',
-          is_active: true,
-          status: 'connected',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+        (payload) => {
+          console.log('API provider change:', payload);
+          fetchProviders();
         }
-      ];
-
-      setApiCalls(mockCalls);
-      setProviders(mockProviders);
-      
-      // Calculate metrics from mock data
-      const totalCalls = mockCalls.length;
-      const totalTokens = mockCalls.reduce((sum, call) => sum + call.total_tokens, 0);
-      const totalCost = mockCalls.reduce((sum, call) => sum + call.cost_usd, 0);
-      const avgResponseTime = mockCalls.reduce((sum, call) => sum + (call.response_time_ms || 0), 0) / totalCalls;
-      const successRate = (mockCalls.filter(call => call.success).length / totalCalls) * 100;
-      
-      setMetrics({
-        totalCalls,
-        totalTokens,
-        totalCost,
-        avgResponseTime,
-        successRate,
-        activeProviders: mockProviders.filter(p => p.is_active).length,
-        callsPerMinute: totalCalls / 60, // Simplified calculation
-        costPerHour: totalCost * 60 // Simplified calculation
-      });
-    };
-
-    // Generate initial mock data
-    generateMockData();
-
-    // Simulate real-time updates every 5 seconds
-    const interval = setInterval(() => {
-      console.log('Simulating new API call...');
-      const newCall: ApiCallLog = {
-        id: Date.now().toString(),
-        user_id: user.id,
-        provider_id: Math.random() > 0.5 ? 'openai' : 'anthropic',
-        endpoint: '/v1/chat/completions',
-        method: 'POST',
-        model: Math.random() > 0.5 ? 'gpt-4' : 'claude-3-sonnet',
-        tokens_input: Math.floor(Math.random() * 500) + 100,
-        tokens_output: Math.floor(Math.random() * 1000) + 200,
-        total_tokens: 0, // Will be calculated
-        cost_usd: Math.random() * 0.05,
-        response_time_ms: Math.floor(Math.random() * 2000) + 500,
-        status_code: 200,
-        success: Math.random() > 0.1, // 90% success rate
-        error_message: undefined,
-        request_metadata: {},
-        response_metadata: {},
-        created_at: new Date().toISOString()
-      };
-      
-      newCall.total_tokens = newCall.tokens_input + newCall.tokens_output;
-      
-      setApiCalls(prev => [newCall, ...prev].slice(0, 50)); // Keep last 50 calls
-      
-      // Update metrics
-      setMetrics(prev => ({
-        ...prev,
-        totalCalls: prev.totalCalls + 1,
-        totalTokens: prev.totalTokens + newCall.total_tokens,
-        totalCost: prev.totalCost + newCall.cost_usd,
-        callsPerMinute: prev.callsPerMinute + 0.2
-      }));
-    }, 5000);
+      )
+      .subscribe();
 
     return () => {
       console.log('Cleaning up Orchestr8 realtime connection');
-      clearInterval(interval);
+      supabase.removeChannel(apiCallsChannel);
+      supabase.removeChannel(providersChannel);
       setIsLive(false);
     };
   }, [user]);
+
+  // Update metrics when data changes
+  useEffect(() => {
+    const newMetrics = calculateMetrics(apiCalls, providers);
+    setMetrics(newMetrics);
+  }, [apiCalls, providers]);
 
   return {
     apiCalls,
