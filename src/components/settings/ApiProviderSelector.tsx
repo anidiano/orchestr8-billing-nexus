@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -16,14 +15,23 @@ interface ApiProviderSelectorProps {
   onCancel: () => void;
 }
 
+interface ConfigState {
+  name: string;
+  apiKey: string;
+  baseUrl: string;
+  customHeaders: Record<string, string>;
+  authType: 'bearer' | 'api-key' | 'custom';
+  isActive: boolean;
+}
+
 const ApiProviderSelector: React.FC<ApiProviderSelectorProps> = ({ onSave, onCancel }) => {
   const [selectedProvider, setSelectedProvider] = useState<ApiProvider | null>(null);
-  const [config, setConfig] = useState({
+  const [config, setConfig] = useState<ConfigState>({
     name: '',
     apiKey: '',
     baseUrl: '',
     customHeaders: {},
-    authType: 'bearer' as const,
+    authType: 'bearer',
     isActive: true
   });
   const [isValidating, setIsValidating] = useState(false);
