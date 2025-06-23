@@ -19,6 +19,7 @@ export interface ApiCallLog {
   id: string;
   user_id: string;
   provider_id: string;
+  provider_name: string;
   endpoint: string;
   method: string;
   model?: string;
@@ -64,6 +65,8 @@ export interface UsageReport {
 
 export interface RealtimeMetrics {
   totalCalls: number;
+  successfulCalls: number;
+  failedCalls: number;
   totalTokens: number;
   totalCost: number;
   avgResponseTime: number;

@@ -61,7 +61,7 @@ const Dashboard: React.FC = () => {
               Welcome back! Here's an overview of your API usage and performance.
             </p>
           </div>
-          <RealtimeIndicator isConnected={isListening} />
+          <RealtimeIndicator isListening={isListening} />
         </div>
 
         <MetricsCards metrics={metrics} />

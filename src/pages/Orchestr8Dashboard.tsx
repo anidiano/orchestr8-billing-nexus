@@ -13,7 +13,7 @@ import { Activity, Zap, Server, AlertTriangle } from 'lucide-react';
 
 const Orchestr8Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const { apiCalls, providers, metrics, isLive } = useOrchestr8Realtime();
+  const { realtimeMetrics, apiCallLogs, apiProviders, isConnected } = useOrchestr8Realtime();
 
   if (!user) {
     return <div>Please sign in to access Orchestr8</div>;
@@ -35,15 +35,15 @@ const Orchestr8Dashboard: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-4">
-            <Badge variant={isLive ? "default" : "secondary"} className={isLive ? "bg-green-500" : ""}>
-              <div className={`w-2 h-2 rounded-full ${isLive ? 'bg-white animate-pulse' : 'bg-gray-300'} mr-2`} />
-              {isLive ? 'Live Monitoring' : 'Offline'}
+            <Badge variant={isConnected ? "default" : "secondary"} className={isConnected ? "bg-green-500" : ""}>
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-white animate-pulse' : 'bg-gray-300'} mr-2`} />
+              {isConnected ? 'Live Monitoring' : 'Offline'}
             </Badge>
             
             <Card className="px-4 py-2">
               <div className="flex items-center gap-2 text-sm">
                 <Server className="h-4 w-4 text-blue-500" />
-                <span className="font-medium">{providers.length}</span>
+                <span className="font-medium">{apiProviders.length}</span>
                 <span className="text-muted-foreground">Providers</span>
               </div>
             </Card>
@@ -71,28 +71,28 @@ const Orchestr8Dashboard: React.FC = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            <RealTimeMetricsCard metrics={metrics} isLive={isLive} />
+            <RealTimeMetricsCard metrics={realtimeMetrics} isLive={isConnected} />
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <RealtimeCharts apiCalls={apiCalls} />
-              <LiveApiCallsTable calls={apiCalls.slice(0, 5)} isLive={isLive} />
+              <RealtimeCharts apiCalls={apiCallLogs} />
+              <LiveApiCallsTable calls={apiCallLogs.slice(0, 5)} isLive={isConnected} />
             </div>
           </TabsContent>
 
           <TabsContent value="calls" className="space-y-6">
-            <LiveApiCallsTable calls={apiCalls} isLive={isLive} />
+            <LiveApiCallsTable calls={apiCallLogs} isLive={isConnected} />
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <RealtimeCharts apiCalls={apiCalls} />
+              <RealtimeCharts apiCalls={apiCallLogs} />
               <Card>
                 <CardHeader>
                   <CardTitle>Provider Performance</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {providers.map((provider) => (
+                    {apiProviders.map((provider) => (
                       <div key={provider.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center gap-3">
                           <div className={`w-3 h-3 rounded-full ${provider.status === 'connected' ? 'bg-green-500' : 'bg-red-500'}`} />
