@@ -3,7 +3,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { useRealtimeMetrics } from '@/hooks/useRealtimeMetrics';
-import { DashboardFlow } from '@/components/dashboard/DashboardFlow';
+import DashboardFlow from '@/components/dashboard/DashboardFlow';
 import Navbar from '@/components/Navbar';
 import MetricsCards from '@/components/dashboard/MetricsCards';
 import RecentActivity from '@/components/dashboard/RecentActivity';
