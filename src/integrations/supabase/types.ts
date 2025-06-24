@@ -273,6 +273,10 @@ export type Database = {
       }
     }
     Functions: {
+      get_current_user_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       increment_usage: {
         Args: {
           p_user_id: string
